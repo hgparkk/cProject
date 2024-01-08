@@ -1,0 +1,2 @@
+void title();
+void registers();
