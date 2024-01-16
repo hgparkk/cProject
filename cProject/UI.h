@@ -1,2 +1,4 @@
+#include <stdbool.h>
+
 void title();
-void registers();
+void newRest(char* _ID, bool regist);

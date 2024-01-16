@@ -9,6 +9,7 @@ void text(int x, int y, char text[]);
 void mouseMove(int* x, int* y);
 void colorSetSelect();
 void colorSetRestore();
-void textInput(int x, int y, char* text, int pw);
+void textInput(int x, int y, char* text, bool pw);
+void textInput2(int x, int y, char* text);
 void drawBox(int x, int y, int width, int height);
 void clearConsole();

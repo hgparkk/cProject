@@ -1,10 +1,12 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h> 
 #include <conio.h>
 #include <Windows.h>
 #define _CRT_SECURE_NO_WARNINGS
 
-typedef struct mouse{
+//마우스 입력 관련 변수
+typedef struct mouse {
 	HANDLE hIn, hOut;
 	DWORD dwNOER;
 	INPUT_RECORD rec;
@@ -38,7 +40,7 @@ void mouseMove(int* x, int* y)
 
 	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
 
-	while (1)
+	while (TRUE)
 	{
 		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
 		*x = mmval.rec.Event.MouseEvent.dwMousePosition.X;
@@ -47,7 +49,7 @@ void mouseMove(int* x, int* y)
 	}
 }
 
-// 마우스 커서를 버튼 위로 올리면 색을 바꾸는 함수
+// 글자 색을 바꾸는 함수
 void colorSetSelect()
 {
 	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -61,27 +63,26 @@ void colorSetRestore()
 	SetConsoleTextAttribute(handle, 7);
 }
 
-
 //해당 좌표에 문자열 입력
-void textInput(int x, int y, char* text, int pw)
+void textInput(int x, int y, char* text, bool pw)
 {
 	char temp[20] = "\0";
 	int num = 0;
 	gotoxy(x, y);
 	strcat(temp, text);
-	while (temp[num]!='\0')
+	while (temp[num] != '\0')
 	{
-		if (pw == 1)
+		if (pw == TRUE)
 		{
 			printf("*");
 		}
 		else
 		{
-			_putch(temp[num]);
+			putchar(temp[num]);
 		}
 		num++;
 	}
-	while (1)
+	while (TRUE)
 	{
 		if (_kbhit())
 		{
@@ -103,10 +104,10 @@ void textInput(int x, int y, char* text, int pw)
 					continue;
 				else
 				{
-					if (pw == 1)
-						_putch('*');
+					if (pw == TRUE)
+						printf("*");
 					else
-						_putch(temp[num]);
+						putchar(temp[num]);
 				}
 				num++;
 			}
@@ -115,7 +116,50 @@ void textInput(int x, int y, char* text, int pw)
 	strcpy(text, temp);
 }
 
-//좌표에 문자열 입력
+//해당 좌표에 문자열 입력(가변길이)
+void textInput2(int x, int y, char* text)
+{
+	char* temp = (char*)calloc(200, sizeof(char));
+	int num = 0;
+	gotoxy(x, y);
+	strcat(temp, text);
+	while (temp[num] != '\0')
+	{
+		putchar(temp[num]);
+		num++;
+	}
+	while (TRUE)
+	{
+		if (_kbhit())
+		{
+			temp[num] = _getch();
+			if (temp[num] == 13)
+			{
+				temp[num] = '\0';
+				break;
+			}
+			else if (temp[num] == '\b' && num != 0)
+			{
+				printf("\b \b");
+				temp[num] = '\0';
+				num--;
+			}
+			else
+			{
+				if (temp[num] == '\b' && num == 0)
+					continue;
+				else
+				{
+					putchar(temp[num]);
+				}
+				num++;
+			}
+		}
+	}
+	strcpy(text, temp);
+}
+
+//좌표에 문자열 출력
 void text(int x, int y, char text[])
 {
 	gotoxy(x, y);
