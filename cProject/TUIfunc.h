@@ -11,5 +11,6 @@ void colorSetSelect();
 void colorSetRestore();
 void textInput(int x, int y, char* text, bool pw);
 void textInput2(int x, int y, char* text);
+void newCode(char* code, char* ID, int num);
 void drawBox(int x, int y, int width, int height);
 void clearConsole();

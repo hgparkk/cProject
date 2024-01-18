@@ -1,6 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <string.h> 
+#include <time.h>
 #include <conio.h>
 #include <Windows.h>
 #define _CRT_SECURE_NO_WARNINGS
@@ -66,7 +68,7 @@ void colorSetRestore()
 //해당 좌표에 문자열 입력
 void textInput(int x, int y, char* text, bool pw)
 {
-	char temp[20] = "\0";
+	char temp[60] = "\0";
 	int num = 0;
 	gotoxy(x, y);
 	strcat(temp, text);
@@ -157,6 +159,28 @@ void textInput2(int x, int y, char* text)
 		}
 	}
 	strcpy(text, temp);
+}
+
+//가게코드 생성
+void newCode(char* code, char* ID, int num)
+{
+	int i;
+	char resCode[28] = "\0";
+	char buffer[10] = "\0";
+	char* randAlpha;
+	_itoa(num, buffer, 10);
+	strcat(resCode, ID);
+	strcat(resCode, buffer);
+	int randLength = 26 - (int)strlen(resCode);
+	randAlpha = (char*)calloc(randLength, sizeof(char));
+	srand((unsigned int)time(NULL));
+	for (i = 0; i < randLength - 1; i++)
+	{
+		randAlpha[i] = 'a' + rand() % 26;
+	}
+	randAlpha[i] = '\0';
+	strcat(resCode, randAlpha);
+	strcpy(code, resCode);
 }
 
 //좌표에 문자열 출력

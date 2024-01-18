@@ -13,7 +13,7 @@ int isValidID(const char* ID)
 
 	// ID의 길이 검증
 	int len = strlen(ID);
-	if (len < 4 || len > 20)
+	if (len < 4 || len > 18)
 	{
 		return 0;
 	}
@@ -58,7 +58,7 @@ int isValidPW(const char* PW)
 
 	// PW의 길이 검증
 	int len = strlen(PW);
-	if (len < 8 || len > 20)
+	if (len < 8 || len > 18)
 	{
 		return 0;
 	}

@@ -45,6 +45,7 @@ void title()
 
 	drawBox(41, 11, 10, 5);
 	text(44, 14, "로그인");
+
 	drawBox(11, 23, 10, 1);
 	text(16, 24, "가입");
 	drawBox(24, 23, 10, 1);
@@ -924,6 +925,135 @@ void pwResetCheck(char* userName, char* ID, char* birth)
 	free(temps);
 }
 
+//메인화면
+void showMain(char* ID)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+	int size = 0;
+
+	drawBox(10, 2, 40, 3);
+	drawBox(10, 7, 40, 3);
+	drawBox(10, 12, 40, 3);
+
+	text(3, 19, "    ★ = 지나가다 있으면 혼자 편하게 식사할 수 있는 가게");
+	text(3, 20, "  ★★ = 지인에게 추천할 수 있을정도로 호불호없는 가게");
+	text(3, 21, "★★★ = 이 가게 식사를 위해 멀리가도 만족할 수 있는 가게");
+
+
+	drawBox(10, 23, 11, 1);
+	text(12, 24, "새맛집등록");
+	drawBox(24, 23, 10, 1);
+	text(27, 24, "맛집정렬");
+	drawBox(37, 23, 13, 1);
+	text(39, 24, "회원정보수정");
+
+	// 마우스 이동과 클릭시 처리
+	while (1)
+	{
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((2 <= y) && (y <= 16))
+		{
+			if ((9 <= x) && (x <= 51))
+			{
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwEventFlags & MOUSE_WHEELED)
+					{
+						// 스크롤 방향 확인
+						short wheelDelta = HIWORD(mmval.rec.Event.MouseEvent.dwButtonState);
+
+						//마우스 위로 스크롤 됨
+						if (wheelDelta > 0) 
+						{
+						}
+						//마우스 아래로 스크롤 됨
+						else if (wheelDelta < 0) 
+						{
+						}
+					}
+				}
+			}
+		}
+		if ((22 <= y) && (y <= 24))
+		{
+			//새맛집등록 버튼
+			if ((9 <= x) && (x <= 24))
+			{
+				colorSetSelect();
+				text(12, 24, "새맛집등록");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						clearConsole();
+						colorSetRestore();
+						text(12, 24, "    ");
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(12, 24, "새맛집등록");
+			}
+			//맞집정렬 버튼
+			if ((25 <= x) && (x <= 36))
+			{
+				colorSetSelect();
+				text(27, 24, "맛집정렬");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						clearConsole();
+						colorSetRestore();
+						text(27, 24, "          ");
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(27, 24, "맛집정렬");
+			}
+			//회원정보수정 버튼
+			if ((36 <= x) && (x <= 52))
+			{
+				colorSetSelect();
+				text(39, 24, "회원정보수정");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						clearConsole();
+						colorSetRestore();
+						text(39, 24, "          ");
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(39, 24, "회원정보수정");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			text(12, 24, "새맛집등록");
+			text(27, 24, "맛집정렬");
+			text(39, 24, "회원정보수정");
+		}
+	}
+}
+
 //가게 등록
 void newRest(char* _ID, bool regist)
 {
@@ -939,9 +1069,9 @@ void newRest(char* _ID, bool regist)
 
 	char ID[20] = "\0";
 	strcpy(ID, _ID);
-	char* restName = (char*)calloc(200, sizeof(char));
-	char* loc = (char*)calloc(200, sizeof(char));
-	char* bHours = (char*)calloc(200, sizeof(char));
+	char restName[40] = "\0";
+	char loc[60] = "\0";
+	char bHours[60] = "\0";
 
 	// 가게등록 창
 	text(7, 8, "가게이름");
@@ -973,8 +1103,7 @@ void newRest(char* _ID, bool regist)
 				{
 					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
 					{
-						textInput2(19, 8, restName);
-						realloc(restName, sizeof(char) * (strlen(restName)+2));
+						textInput(19, 8, restName, FALSE);
 					}
 				}
 			}
@@ -985,8 +1114,7 @@ void newRest(char* _ID, bool regist)
 				{
 					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
 					{
-						textInput2(19, 11, loc);
-						realloc(loc, sizeof(char) * (strlen(loc)+2));
+						textInput(19, 11, loc, FALSE);
 					}
 				}
 			}
@@ -997,8 +1125,7 @@ void newRest(char* _ID, bool regist)
 				{
 					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
 					{
-						textInput2(19,14, bHours);
-						realloc(bHours, sizeof(char) * (strlen(bHours))+2);
+						textInput(19,14, bHours, FALSE);
 					}
 				}
 			}
@@ -1074,21 +1201,28 @@ void newRestInput(char* ID, char* restName, char* loc, char* bHours, bool regist
 	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
 	int x, y;
 
-	Rest rest;
-	rest.restName = (char*)calloc(strlen(restName), sizeof(char));
-	rest.loc = (char*)calloc(strlen(loc), sizeof(char));
-	rest.bHours = (char*)calloc(strlen(bHours), sizeof(char));
-	strcpy(rest.ID, ID);
-	strcpy(rest.restName, restName);
-	strcpy(rest.loc, loc);
-	strcpy(rest.bHours, bHours);
+	Rest resRest;
+	strcpy(resRest.ID, ID);
+	strcpy(resRest.restName, restName);
+	strcpy(resRest.loc, loc);
+	strcpy(resRest.bHours, bHours);
+	char code[28] = "\0";
+	if (regist == TRUE)
+	{
+		newCode(code, ID, 1);
+	}
+	else
+	{
+
+	}
+	strcpy(resRest.code, code);
 	if (strcmp(restName, "\0") != 0)
 	{
 		if (strcmp(loc, "\0") != 0)
 		{
 			if (strcmp(bHours, "\0") != 0)
 			{
-				restInfoFileWrite(rest);
+				restInfoFileWrite(resRest);
 				drawBox(10, 10, 30, 10);
 				text(14, 12, "가게 등록이 완료되었습니다.");
 				drawBox(19, 18, 10, 1);
