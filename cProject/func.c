@@ -81,6 +81,7 @@ int isValidPW(const char* PW)
 	return 1;
 }
 
+//이름 검증을 하기위한 한글 판독
 int isKoreanChar(char ch) 
 {
 	// ASCII 범위 이외의 문자를 한글로 간주

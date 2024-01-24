@@ -33,9 +33,15 @@ typedef struct review
 {
 	char ID[20];
 	char code[28];
-	char repu[4];
+	int repu;
 	char review[];
 }Review;
+
+typedef struct restList
+{
+	Rest rest;
+	Review review;
+}RestList;
 
 void userInfoFileWrite(User user);
 void userInfoFileReWrite(User* user, int size);

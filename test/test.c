@@ -137,58 +137,98 @@ Review* reviewFileRead(int* _size)
 	return temps;
 }
 
-int main()
+//해당 좌표에 문자열 입력
+void textInput2(int x, int y, char* text)
 {
-	Mouse mmval;
-	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
-	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
-
-	int x, y;
-	int size = 0;
-
-	drawBox(10, 2, 40, 3);
-	drawBox(10, 7, 40, 3);
-	drawBox(10, 12, 40, 3);
-
-	text(3, 19, "    ★ = 지나가다 있으면 혼자 편하게 식사할 수 있는 가게");
-	text(3, 20, "  ★★ = 지인에게 추천할 수 있을정도로 호불호없는 가게");
-	text(3, 21, "★★★ = 이 가게 식사를 위해 멀리가도 만족할 수 있는 가게");
-
-	drawBox(10, 23, 11, 1);
-	text(12, 24, "새맛집등록");
-	drawBox(24, 23, 10, 1);
-	text(27, 24, "맛집정렬");
-	drawBox(37, 23, 13, 1);
-	text(39, 24, "회원정보수정");
-
-	// 마우스 이동과 클릭시 처리
-	while (1)
+	char* temp = (char*)calloc(300, sizeof(char));
+	int num = 0;
+	int resY = y;
+	int koreanCheck = 0;
+	gotoxy(x, y);
+	strcat(temp, text);
+	while (temp[num] != '\0')
 	{
-		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
-		mouseMove(&x, &y);
-		if ((2 <= y) && (y <= 16))
+		if ((num != 0) && ((num % 28) == 0))
 		{
-			if ((9 <= x) && (x <= 51))
+			resY++;
+			gotoxy(x, resY);
+		}
+		putchar(temp[num]);
+		num++;
+	}
+	while (TRUE)
+	{
+		if (_kbhit())
+		{
+			if ((num != 0) && ((num % 28) == 0))
 			{
-				if (mmval.rec.EventType == MOUSE_EVENT)
+				if (temp[num] >> 7)
 				{
-					if (mmval.rec.Event.MouseEvent.dwEventFlags & MOUSE_WHEELED)
+					koreanCheck++;
+					if (koreanCheck == 2)
 					{
-						// 스크롤 방향 확인
-						short wheelDelta = HIWORD(mmval.rec.Event.MouseEvent.dwButtonState);
-
-						if (wheelDelta > 0) {
-							// 마우스 휠이 위로 스크롤됨
-							text(12, 5, "Mouse wheel scrolled up");
-						}
-						else if (wheelDelta < 0) {
-							// 마우스 휠이 아래로 스크롤됨
-							text(12, 5, "Mouse wheel scrolled down");
-						}
+						resY++;
+						gotoxy(x, resY);
+						koreanCheck = 0;
 					}
 				}
+				else
+				{
+					resY++;
+					gotoxy(x, resY);
+				}
+			}
+			temp[num] = _getch();
+			if (temp[num] == 13)
+			{
+				temp[num] = '\0';
+				break;
+			}
+			else if (temp[num] == '\b' && num != 0)
+			{
+				if ((num != 0) && (num&30)==0)
+				{
+					if (temp[num-1] >> 7)
+					{
+						koreanCheck++;
+						if (koreanCheck == 2)
+						{
+							resY--;
+							gotoxy(x+30, resY);
+							koreanCheck = 0;
+						}
+					}
+					else
+					{
+						resY--;
+						gotoxy(x+30, resY);
+					}
+				}
+				else
+				{
+					printf("\b \b");
+					temp[num] = '\0';
+				}
+				num--;
+			}
+			else
+			{
+				if (temp[num] == '\b' && num == 0)
+					continue;
+				else
+				{
+					putchar(temp[num]);
+				}
+				num++;
 			}
 		}
 	}
+	strcpy(text, temp);
+}
+
+int main()
+{
+	char* str = (char*)calloc(300, sizeof(char));
+	textInput2(0, 10, str);
+	text(0, 0, str);
 }

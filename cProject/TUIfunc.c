@@ -5,6 +5,7 @@
 #include <time.h>
 #include <conio.h>
 #include <Windows.h>
+#include "func.h"
 #define _CRT_SECURE_NO_WARNINGS
 
 //마우스 입력 관련 변수
@@ -118,15 +119,22 @@ void textInput(int x, int y, char* text, bool pw)
 	strcpy(text, temp);
 }
 
-//해당 좌표에 문자열 입력(가변길이)
+//해당 좌표에 문자열 입력(리뷰)
 void textInput2(int x, int y, char* text)
 {
-	char* temp = (char*)calloc(200, sizeof(char));
+	char* temp = (char*)calloc(300, sizeof(char));
 	int num = 0;
+	int resY = y;
+	int koreanCheck = 0;
 	gotoxy(x, y);
 	strcat(temp, text);
 	while (temp[num] != '\0')
 	{
+		if ((num != 0) && ((num % 28) == 0))
+		{
+			resY++;
+			gotoxy(x, resY);
+		}
 		putchar(temp[num]);
 		num++;
 	}
@@ -134,6 +142,23 @@ void textInput2(int x, int y, char* text)
 	{
 		if (_kbhit())
 		{
+			if ((num != 0) && ((num % 28) == 0))
+			{
+				if (temp[num] >> 7)
+				{
+					koreanCheck++;
+					if (koreanCheck == 2)
+					{
+						resY++;
+						gotoxy(x, resY);
+					}
+				}
+				else
+				{
+					resY++;
+					gotoxy(x, resY);
+				}
+			}
 			temp[num] = _getch();
 			if (temp[num] == 13)
 			{

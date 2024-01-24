@@ -37,7 +37,7 @@ typedef struct review
 {
 	char ID[20];
 	char code[28];
-	char repu[4];
+	int repu;
 	char review[];
 }Review;
 
@@ -124,7 +124,7 @@ void restInfoFileWrite(Rest rest)
 	}
 	else
 	{
-		fprintf(fp, "%s\n%s\n%s\n%s\n%s\n\n", rest.code, rest.ID, rest.restName, rest.loc, rest.bHours);
+		fprintf(fp, "%s %s %s %s %s\n", rest.code, rest.ID, rest.restName, rest.loc, rest.bHours);
 	}
 	fclose(fp);
 }
@@ -146,7 +146,7 @@ Rest* restInfoFileRead(int* _size)
 	{
 		while (!feof(fp))
 		{
-			fscanf(fp, "%s\n%s\n%s\n%s\n%s\n\n", temp.code, temp.ID, temp.restName, temp.loc, temp.bHours);
+			fscanf(fp, "%s %s %s %s %s\n", temp.code, temp.ID, temp.restName, temp.loc, temp.bHours);
 			size++;
 		}
 		temps = (Rest*)malloc(sizeof(Rest) * size);
@@ -154,7 +154,7 @@ Rest* restInfoFileRead(int* _size)
 		fp = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\restInfo.txt", "r");
 		while (!feof(fp))
 		{
-			fscanf(fp, "%s\n%s\n%s\n%s\n%s\n\n", temps[size].code, temps[size].ID, temps[size].restName, temps[size].loc, temps[size].bHours);
+			fscanf(fp, "%s %s %s %s %s\n", temps[size].code, temps[size].ID, temps[size].restName, temps[size].loc, temps[size].bHours);
 			size++;
 		}
 	}
@@ -226,7 +226,7 @@ void reviewFileWrite(Review review)
 	}
 	else
 	{
-		fprintf(fp, "%s %s %s %s", review.ID, review.code, review.repu, review.review);
+		fprintf(fp, "%s %s %d %s", review.ID, review.code, review.repu, review.review);
 	}
 	fclose(fp);
 }
@@ -248,7 +248,7 @@ Review* reviewFileRead(int* _size)
 	{
 		while (!feof(fp))
 		{
-			fscanf(fp, "%s %s %s %s", temp.ID, temp.code, temp.repu, temp.review);
+			fscanf(fp, "%s %s %d %s", temp.ID, temp.code, temp.repu, temp.review);
 			size++;
 		}
 		temps = (Review*)malloc(sizeof(Review) * size);
@@ -256,7 +256,7 @@ Review* reviewFileRead(int* _size)
 		fp = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\review.txt", "r");
 		while (!feof(fp))
 		{
-			fscanf(fp, "%s %s %s %s", temps[size].ID, temps[size].code, temps[size].repu, temps[size].review);
+			fscanf(fp, "%s %s %d %s", temps[size].ID, temps[size].code, temps[size].repu, temps[size].review);
 			size++;
 		}
 	}
