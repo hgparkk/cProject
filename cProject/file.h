@@ -34,7 +34,7 @@ typedef struct review
 	char ID[20];
 	char code[28];
 	int repu;
-	char review[];
+	char usersReview[304];
 }Review;
 
 typedef struct restList
@@ -43,15 +43,23 @@ typedef struct restList
 	Review review;
 }RestList;
 
+typedef struct restOwner
+{
+	Rest rest;
+	User user;
+}RestOwner;
+
 void userInfoFileWrite(User user);
 void userInfoFileReWrite(User* user, int size);
 User* userInfoFileRead(int* _size);
 
 void restInfoFileWrite(Rest rest);
+void restInfoFileReWrite(Rest* rest, int size);
 Rest* restInfoFileRead(int* _size);
 
 void menuFileWrite(Menu menu);
 Menu* menuFileRead(int* _size);
 
 void reviewFileWrite(Review review);
+void reviewFileReWrite(Review* review, int size);
 Review* reviewFileRead(int* _size);

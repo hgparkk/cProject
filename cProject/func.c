@@ -152,3 +152,22 @@ int isValidBirth(const char* birth)
 
 	return 1;
 }
+
+//맛집 중복 검사
+int isValidRest(const char* code, const char* ID)
+{
+	Review* temps;
+	int size;
+	temps = reviewFileRead(&size);
+	for (int i = 0; i < size; i++)
+	{
+		if (strcmp(temps[i].ID, ID) == 0)
+		{
+			if (strcmp(temps[i].code, code) == 0)
+			{
+				return 0;
+			}
+		}
+	}
+	return 1;
+}

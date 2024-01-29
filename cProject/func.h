@@ -6,3 +6,4 @@ int isValidPW(const char* pw);
 int isValidName1(const char* name);
 int isValidName2(const char* name);
 int isValidBirth(const char* birth);
+int isValidRest(const char* code, const char* ID);

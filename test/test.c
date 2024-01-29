@@ -228,7 +228,8 @@ void textInput2(int x, int y, char* text)
 
 int main()
 {
-	char* str = (char*)calloc(300, sizeof(char));
-	textInput2(0, 10, str);
-	text(0, 0, str);
+	drawBox(9, 10, 38, 10);
+	text(18, 12, "회원이 탈퇴되었습니다.");
+	drawBox(22, 18, 10, 1);
+	text(27, 19, "확인");
 }

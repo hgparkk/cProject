@@ -168,6 +168,11 @@ void textInput2(int x, int y, char* text)
 			else if (temp[num] == '\b' && num != 0)
 			{
 				printf("\b \b");
+				if ((num % 29) == 0)
+				{
+					resY--;
+					gotoxy(x + num-1, resY);
+				}
 				temp[num] = '\0';
 				num--;
 			}
@@ -195,7 +200,9 @@ void newCode(char* code, char* ID, int num)
 	char* randAlpha;
 	_itoa(num, buffer, 10);
 	strcat(resCode, ID);
+	strcat(resCode, "-");
 	strcat(resCode, buffer);
+	strcat(resCode, "-");
 	int randLength = 26 - (int)strlen(resCode);
 	randAlpha = (char*)calloc(randLength, sizeof(char));
 	srand((unsigned int)time(NULL));

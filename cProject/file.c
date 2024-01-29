@@ -38,9 +38,10 @@ typedef struct review
 	char ID[20];
 	char code[28];
 	int repu;
-	char review[];
+	char usersReview[304];
 }Review;
 
+//유저정보 파일 쓰기 (수정)
 void userInfoFileReWrite(User* user, int size)
 {
 	FILE* fp;
@@ -61,6 +62,7 @@ void userInfoFileReWrite(User* user, int size)
 	fclose(fp);
 }
 
+//유저정보 파일 쓰기 (추가)
 void userInfoFileWrite(User user)
 {
 	FILE* fp;
@@ -78,6 +80,7 @@ void userInfoFileWrite(User user)
 	fclose(fp);
 }
 
+//유저정보 파일 읽기
 User* userInfoFileRead(int* _size)
 {
 	User temp;
@@ -112,6 +115,28 @@ User* userInfoFileRead(int* _size)
 	return temps;
 }
 
+//가게정보 파일 쓰기 (수정)
+void restInfoFileReWrite(Rest* rest, int size)
+{
+	FILE* fp;
+	fp = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\restInfo.txt", "w");
+
+	if (fp == NULL)
+	{
+		fprintf(stderr, "출력을 위한 파일을 열 수 없습니다.\n");
+		exit(1);
+	}
+	else
+	{
+		for (int i = 0; i < size; i++)
+		{
+			fprintf(fp, "%s %s %s %s %s\n", rest[i].code, rest[i].ID, rest[i].restName, rest[i].loc, rest[i].bHours);
+		}
+	}
+	fclose(fp);
+}
+
+//가게정보 파일 쓰기 (추가)
 void restInfoFileWrite(Rest rest)
 {
 	FILE* fp;
@@ -129,6 +154,7 @@ void restInfoFileWrite(Rest rest)
 	fclose(fp);
 }
 
+//가게정보 파일 읽기
 Rest* restInfoFileRead(int* _size)
 {
 	Rest temp;
@@ -163,6 +189,7 @@ Rest* restInfoFileRead(int* _size)
 	return temps;
 }
 
+//메뉴정보 파일 쓰기
 void menuFileWrite(Menu menu)
 {
 	FILE* fp;
@@ -175,11 +202,12 @@ void menuFileWrite(Menu menu)
 	}
 	else
 	{
-		fprintf(fp, "%s %s %d", menu.code, menu.menuName, menu.price);
+		fprintf(fp, "%s %s %d\n", menu.code, menu.menuName, menu.price);
 	}
 	fclose(fp);
 }
 
+//메뉴정보 파일 읽기
 Menu* menuFileRead(int* _size)
 {
 	Menu temp;
@@ -197,7 +225,7 @@ Menu* menuFileRead(int* _size)
 	{
 		while (!feof(fp))
 		{
-			fscanf(fp, "%s %s %d", temp.code, temp.menuName, &temp.price);
+			fscanf(fp, "%s %s %d\n", temp.code, temp.menuName, &temp.price);
 			size++;
 		}
 		temps = (Menu*)malloc(sizeof(Menu) * size);
@@ -205,7 +233,7 @@ Menu* menuFileRead(int* _size)
 		fp = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\menu.txt", "r");
 		while (!feof(fp))
 		{
-			fscanf(fp, "%s %s %d", temps[size].code, temps[size].menuName, &temps[size].price);
+			fscanf(fp, "%s %s %d\n", temps[size].code, temps[size].menuName, &temps[size].price);
 			size++;
 		}
 	}
@@ -214,6 +242,28 @@ Menu* menuFileRead(int* _size)
 	return temps;
 }
 
+//리뷰정보 파일 쓰기 (수정)
+void reviewFileReWrite(Review* review, int size)
+{
+	FILE* fp;
+	fp = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\review.txt", "w");
+
+	if (fp == NULL)
+	{
+		fprintf(stderr, "출력을 위한 파일을 열 수 없습니다.\n");
+		exit(1);
+	}
+	else
+	{
+		for (int i = 0; i < size; i++)
+		{
+			fprintf(fp, "%s %s %d %s\n", review[i].ID, review[i].code, review[i].repu, review[i].usersReview);
+		}
+	}
+	fclose(fp);
+}
+
+//리뷰정보 파일 쓰기 (추가)
 void reviewFileWrite(Review review)
 {
 	FILE* fp;
@@ -226,11 +276,12 @@ void reviewFileWrite(Review review)
 	}
 	else
 	{
-		fprintf(fp, "%s %s %d %s", review.ID, review.code, review.repu, review.review);
+		fprintf(fp, "%s %s %d %s\n", review.ID, review.code, review.repu, review.usersReview);
 	}
 	fclose(fp);
 }
 
+//리뷰정보 파일 읽기
 Review* reviewFileRead(int* _size)
 {
 	Review temp;
@@ -248,7 +299,7 @@ Review* reviewFileRead(int* _size)
 	{
 		while (!feof(fp))
 		{
-			fscanf(fp, "%s %s %d %s", temp.ID, temp.code, temp.repu, temp.review);
+			fscanf(fp, "%s %s %d %s\n", temp.ID, temp.code, &temp.repu, temp.usersReview);
 			size++;
 		}
 		temps = (Review*)malloc(sizeof(Review) * size);
@@ -256,7 +307,7 @@ Review* reviewFileRead(int* _size)
 		fp = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\review.txt", "r");
 		while (!feof(fp))
 		{
-			fscanf(fp, "%s %s %d %s", temps[size].ID, temps[size].code, temps[size].repu, temps[size].review);
+			fscanf(fp, "%s %s %d %s\n", temps[size].ID, temps[size].code, &temps[size].repu, temps[size].usersReview);
 			size++;
 		}
 	}
