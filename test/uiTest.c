@@ -186,22 +186,22 @@ void textInput2(int x, int y, char* text)
 			}
 			else if (temp[num] == '\b' && num != 0)
 			{
-				if ((num != 0) && (num&30)==0)
+				if ((num != 0) && (num & 30) == 0)
 				{
-					if (temp[num-1] >> 7)
+					if (temp[num - 1] >> 7)
 					{
 						koreanCheck++;
 						if (koreanCheck == 2)
 						{
 							resY--;
-							gotoxy(x+30, resY);
+							gotoxy(x + 30, resY);
 							koreanCheck = 0;
 						}
 					}
 					else
 					{
 						resY--;
-						gotoxy(x+30, resY);
+						gotoxy(x + 30, resY);
 					}
 				}
 				else
@@ -228,8 +228,16 @@ void textInput2(int x, int y, char* text)
 
 int main()
 {
-	drawBox(9, 10, 38, 10);
-	text(18, 12, "회원이 탈퇴되었습니다.");
-	drawBox(22, 18, 10, 1);
-	text(27, 19, "확인");
+	setConsole();
+
+	drawBox(17, 7, 25, 1);
+	drawBox(17, 10, 25, 1);
+	drawBox(17, 13, 25, 1);
+
+
+	drawBox(10, 23, 11, 1);
+	text(14, 24, "수정");
+	drawBox(37, 23, 11, 1);
+	text(39, 24, "돌아가기");
+
 }

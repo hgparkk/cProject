@@ -37,15 +37,15 @@ typedef struct review
 {
 	char ID[20];
 	char code[28];
-	int repu;
 	char usersReview[304];
+	int repu;
 }Review;
 
-//유저정보 파일 쓰기 (수정)
-void userInfoFileReWrite(User* user, int size)
+//유저정보 파일 수정
+void userInfoFileReWrite(User user, int seek)
 {
 	FILE* fp;
-	fp = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\userInfo.txt", "w");
+	fp = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\userInfo.txt", "r+");
 
 	if (fp == NULL)
 	{
@@ -54,15 +54,17 @@ void userInfoFileReWrite(User* user, int size)
 	}
 	else
 	{
-		for (int i = 0; i < size; i++)
+		if (seek != 0)
 		{
-			fprintf(fp, "%s %s %s %s %d\n", user[i].ID, user[i].PW, user[i].userName, user[i].birth, user[i].owner);
+			fseek(fp, (sizeof(User) * seek) + 1, SEEK_SET);
 		}
+		fwrite(&user, sizeof(User), 1, fp);
+		fprintf(fp, " ");
 	}
 	fclose(fp);
 }
 
-//유저정보 파일 쓰기 (추가)
+//유저정보 파일 쓰기
 void userInfoFileWrite(User user)
 {
 	FILE* fp;
@@ -75,7 +77,8 @@ void userInfoFileWrite(User user)
 	}
 	else
 	{
-		fprintf(fp, "%s %s %s %s %d\n", user.ID, user.PW, user.userName, user.birth, user.owner);
+		fwrite(&user, sizeof(User),1, fp);
+		fprintf(fp,"\n");
 	}
 	fclose(fp);
 }
@@ -98,7 +101,8 @@ User* userInfoFileRead(int* _size)
 	{
 		while (!feof(fp))
 		{
-			fscanf(fp, "%s %s %s %s %d\n", temp.ID, temp.PW, temp.userName, temp.birth, &temp.owner);
+			fread(&temp, sizeof(User), 1, fp);
+			fscanf(fp, "\n");
 			size++;
 		}
 		temps = (User*)malloc(sizeof(User) * size);
@@ -106,7 +110,8 @@ User* userInfoFileRead(int* _size)
 		fp = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\userInfo.txt", "r");
 		while (!feof(fp))
 		{
-			fscanf(fp, "%s %s %s %s %d\n", temps[size].ID, temps[size].PW, temps[size].userName, temps[size].birth, &temps[size].owner);
+			fread(&temps[size], sizeof(User), 1, fp);
+			fscanf(fp, "\n");
 			size++;
 		}
 	}
@@ -115,11 +120,54 @@ User* userInfoFileRead(int* _size)
 	return temps;
 }
 
-//가게정보 파일 쓰기 (수정)
-void restInfoFileReWrite(Rest* rest, int size)
+//유저정보 삭제
+void userInfoFileDeleteLine(int seek) {
+	FILE* inputFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\userInfo.txt", "r");
+	FILE* tempFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\temp.txt", "w");
+
+	if (inputFile == NULL || tempFile == NULL) {
+		fprintf(stderr, "출력을 위한 파일을 열 수 없습니다.\n");
+		exit(1);
+	}
+
+	User temp;
+	int currentLine = 0;
+
+	while (!feof(inputFile))
+	{
+		fread(&temp, sizeof(User), 1, inputFile);
+		fscanf(inputFile, "\n");
+		if (currentLine != seek)
+		{
+			fwrite(&temp, sizeof(User), 1, tempFile);
+			fprintf(tempFile, "\n");
+		}
+		currentLine++;
+	}
+
+	fclose(inputFile);
+	fclose(tempFile);
+
+	inputFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\userInfo.txt", "w");
+	tempFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\temp.txt", "r");
+
+	while (!feof(tempFile))
+	{
+		fread(&temp, sizeof(User), 1, tempFile);
+		fscanf(tempFile, "\n");
+		fwrite(&temp, sizeof(User), 1, inputFile);
+		fprintf(inputFile, "\n");
+	}
+
+	fclose(inputFile);
+	fclose(tempFile);
+}
+
+//가게정보 파일 수정
+void restInfoFileReWrite(Rest rest, int seek)
 {
 	FILE* fp;
-	fp = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\restInfo.txt", "w");
+	fp = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\restInfo.txt", "r+");
 
 	if (fp == NULL)
 	{
@@ -128,15 +176,17 @@ void restInfoFileReWrite(Rest* rest, int size)
 	}
 	else
 	{
-		for (int i = 0; i < size; i++)
+		if (seek != 0)
 		{
-			fprintf(fp, "%s %s %s %s %s\n", rest[i].code, rest[i].ID, rest[i].restName, rest[i].loc, rest[i].bHours);
+			fseek(fp, (sizeof(Rest) * seek) + 1, SEEK_SET);
 		}
+		fwrite(&rest, sizeof(Rest), 1, fp);
+		fprintf(fp, " ");
 	}
 	fclose(fp);
 }
 
-//가게정보 파일 쓰기 (추가)
+//가게정보 파일 쓰기
 void restInfoFileWrite(Rest rest)
 {
 	FILE* fp;
@@ -149,7 +199,8 @@ void restInfoFileWrite(Rest rest)
 	}
 	else
 	{
-		fprintf(fp, "%s %s %s %s %s\n", rest.code, rest.ID, rest.restName, rest.loc, rest.bHours);
+		fwrite(&rest, sizeof(Rest), 1, fp);
+		fprintf(fp, "\n");
 	}
 	fclose(fp);
 }
@@ -172,7 +223,8 @@ Rest* restInfoFileRead(int* _size)
 	{
 		while (!feof(fp))
 		{
-			fscanf(fp, "%s %s %s %s %s\n", temp.code, temp.ID, temp.restName, temp.loc, temp.bHours);
+			fread(&temp, sizeof(Rest), 1, fp);
+			fscanf(fp, "\n");
 			size++;
 		}
 		temps = (Rest*)malloc(sizeof(Rest) * size);
@@ -180,13 +232,57 @@ Rest* restInfoFileRead(int* _size)
 		fp = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\restInfo.txt", "r");
 		while (!feof(fp))
 		{
-			fscanf(fp, "%s %s %s %s %s\n", temps[size].code, temps[size].ID, temps[size].restName, temps[size].loc, temps[size].bHours);
+			fread(&temps[size], sizeof(Rest), 1, fp);
+			fscanf(fp, "\n");
 			size++;
 		}
 	}
 	fclose(fp);
 	*_size = size;
 	return temps;
+}
+
+//가게정보 삭제
+void restInfoFileDeleteLine(int seek) {
+	FILE* inputFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\restInfo.txt", "r");
+	FILE* tempFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\temp.txt", "w");
+
+	if (inputFile == NULL || tempFile == NULL) {
+		fprintf(stderr, "출력을 위한 파일을 열 수 없습니다.\n");
+		exit(1);
+	}
+
+	Rest temp;
+	int currentLine = 0;
+
+	while (!feof(inputFile))
+	{
+		fread(&temp, sizeof(Rest), 1, inputFile);
+		fscanf(inputFile, "\n");
+		if (currentLine != seek)
+		{
+			fwrite(&temp, sizeof(Rest), 1, tempFile);
+			fprintf(tempFile, "\n");
+		}
+		currentLine++;
+	}
+
+	fclose(inputFile);
+	fclose(tempFile);
+
+	inputFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\restInfo.txt", "w");
+	tempFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\temp.txt", "r");
+
+	while (!feof(tempFile))
+	{
+		fread(&temp, sizeof(Rest), 1, tempFile);
+		fscanf(tempFile, "\n");
+		fwrite(&temp, sizeof(Rest), 1, inputFile);
+		fprintf(inputFile, "\n");
+	}
+
+	fclose(inputFile);
+	fclose(tempFile);
 }
 
 //메뉴정보 파일 쓰기
@@ -202,7 +298,9 @@ void menuFileWrite(Menu menu)
 	}
 	else
 	{
-		fprintf(fp, "%s %s %d\n", menu.code, menu.menuName, menu.price);
+		fwrite(menu.code, sizeof(char), sizeof(menu.code), fp);
+		fwrite(menu.menuName, sizeof(char), sizeof(menu.menuName), fp);
+		fprintf(fp,"%d\n", menu.price);
 	}
 	fclose(fp);
 }
@@ -225,7 +323,9 @@ Menu* menuFileRead(int* _size)
 	{
 		while (!feof(fp))
 		{
-			fscanf(fp, "%s %s %d\n", temp.code, temp.menuName, &temp.price);
+			fread(temp.code, sizeof(char), sizeof(temp.code), fp);
+			fread(temp.menuName, sizeof(char), sizeof(temp.menuName), fp);
+			fscanf(fp,"%d\n", temp.price);
 			size++;
 		}
 		temps = (Menu*)malloc(sizeof(Menu) * size);
@@ -233,7 +333,9 @@ Menu* menuFileRead(int* _size)
 		fp = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\menu.txt", "r");
 		while (!feof(fp))
 		{
-			fscanf(fp, "%s %s %d\n", temps[size].code, temps[size].menuName, &temps[size].price);
+			fread(temp.code, sizeof(char), sizeof(temp.code), fp);
+			fread(temp.menuName, sizeof(char), sizeof(temp.menuName), fp);
+			fscanf(fp,"%d\n", temp.price);
 			size++;
 		}
 	}
@@ -242,28 +344,51 @@ Menu* menuFileRead(int* _size)
 	return temps;
 }
 
-//리뷰정보 파일 쓰기 (수정)
-void reviewFileReWrite(Review* review, int size)
+//리뷰정보 파일 수정
+void reviewFileReWrite(Review review, int seek)
 {
-	FILE* fp;
-	fp = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\review.txt", "w");
+	FILE* inputFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\review.txt", "r");
+	FILE* tempFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\temp.txt", "w");
 
-	if (fp == NULL)
-	{
+	if (inputFile == NULL || tempFile == NULL) {
 		fprintf(stderr, "출력을 위한 파일을 열 수 없습니다.\n");
 		exit(1);
 	}
-	else
+
+	Review temp;
+	int currentLine = 0;
+
+	while (!feof(inputFile))
 	{
-		for (int i = 0; i < size; i++)
+		fscanf(inputFile, "%s %s %s %d\n", temp.ID, temp.code, temp.usersReview, &temp.repu);
+		if (currentLine != seek)
 		{
-			fprintf(fp, "%s %s %d %s\n", review[i].ID, review[i].code, review[i].repu, review[i].usersReview);
+			fprintf(tempFile, "%s %s %s %d\n", temp.ID, temp.code, temp.usersReview, temp.repu);
 		}
+		else
+		{
+			fprintf(tempFile, "%s %s %s %d\n", review.ID, review.code, review.usersReview, review.repu);
+		}
+		currentLine++;
 	}
-	fclose(fp);
+
+	fclose(inputFile);
+	fclose(tempFile);
+
+	inputFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\review.txt", "w");
+	tempFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\temp.txt", "r");
+
+	while (!feof(tempFile))
+	{
+		fscanf(tempFile, "%s %s %s %d\n", temp.ID, temp.code, temp.usersReview, &temp.repu);
+		fprintf(inputFile, "%s %s %s %d\n", temp.ID, temp.code, temp.usersReview, temp.repu);
+	}
+
+	fclose(inputFile);
+	fclose(tempFile);
 }
 
-//리뷰정보 파일 쓰기 (추가)
+//리뷰정보 파일 쓰기
 void reviewFileWrite(Review review)
 {
 	FILE* fp;
@@ -276,7 +401,7 @@ void reviewFileWrite(Review review)
 	}
 	else
 	{
-		fprintf(fp, "%s %s %d %s\n", review.ID, review.code, review.repu, review.usersReview);
+		fprintf(fp, "%s %s %s %d\n", review.ID, review.code, review.usersReview, review.repu);
 	}
 	fclose(fp);
 }
@@ -299,7 +424,7 @@ Review* reviewFileRead(int* _size)
 	{
 		while (!feof(fp))
 		{
-			fscanf(fp, "%s %s %d %s\n", temp.ID, temp.code, &temp.repu, temp.usersReview);
+			fscanf(fp, "%s %s %s %d\n", temp.ID, temp.code, temp.usersReview, &temp.repu);
 			size++;
 		}
 		temps = (Review*)malloc(sizeof(Review) * size);
@@ -307,11 +432,50 @@ Review* reviewFileRead(int* _size)
 		fp = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\review.txt", "r");
 		while (!feof(fp))
 		{
-			fscanf(fp, "%s %s %d %s\n", temps[size].ID, temps[size].code, &temps[size].repu, temps[size].usersReview);
+			fscanf(fp, "%s %s %s %d\n", temps[size].ID, temps[size].code, temps[size].usersReview, &temps[size].repu);
 			size++;
 		}
 	}
 	fclose(fp);
 	*_size = size;
 	return temps;
+}
+
+//리뷰정보 삭제
+void reviewFileDeleteLine(int seek) {
+	FILE* inputFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\review.txt", "r");
+	FILE* tempFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\temp.txt", "w");
+
+	if (inputFile == NULL || tempFile == NULL) {
+		fprintf(stderr, "출력을 위한 파일을 열 수 없습니다.\n");
+		exit(1);
+	}
+
+	Review temp;
+	int currentLine = 0;
+
+	while (!feof(inputFile))
+	{
+		fscanf(inputFile, "%s %s %s %d\n", temp.ID, temp.code, temp.usersReview, &temp.repu);
+		if (currentLine != seek)
+		{
+			fprintf(tempFile, "%s %s %s %d\n", temp.ID, temp.code, temp.usersReview, temp.repu);
+		}
+		currentLine++;
+	}
+
+	fclose(inputFile);
+	fclose(tempFile);
+
+	inputFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\review.txt", "w");
+	tempFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\temp.txt", "r");
+
+	while (!feof(tempFile))
+	{
+		fscanf(tempFile, "%s %s %s %d\n", temp.ID, temp.code, temp.usersReview, &temp.repu);
+		fprintf(inputFile, "%s %s %s %d\n", temp.ID, temp.code, temp.usersReview, temp.repu);
+	}
+
+	fclose(inputFile);
+	fclose(tempFile);
 }

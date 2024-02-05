@@ -17,7 +17,10 @@ void idFind();
 void idFindCheck(char* userName, char* birth);
 void pwReset();
 void pwResetCheck(char* userName, char* ID, char* birth);
-void showMain(User user);
+FavListArray makeFavRestList(User user);
+RestListArray makeOwnersRestList(User user);
+void showMainUser(User user, FavListArray favListArray);
+void showMainOwner(User user, RestListArray restListArray);
 void newRest(User user, bool regist);
 void newRestInput(User user, char* restName, char* loc, char* bHours, bool regist);
 void newFavRest(User user);
@@ -27,6 +30,25 @@ void userInfoReset(User user);
 void userInfoResetInput(User user, char* userName, char* PW, char* birth);
 void userResign(User user);
 void userResignCheck(User user);
+void favRestSort(User user, FavListArray favListArray);
+void favRestSortButton(User user, FavListArray favListArray, int option);
+void favRestBrowse(User user, RestList restList);
+void ownersRestBrowse(User user, Rest rest);
+void reviewReset(User user, RestList restList);
+void reviewResetButton(User user, char* code, int repu, char* usersReview);
+ReviewArray makeReviewArray(Rest rest);
+void browseOthersReview(User user, RestList restList, ReviewArray reviewArray);
+void reviewBrowseWindowUser(User user, RestList restList, Review review);
+void reviewSortUser(User user, RestList restList, ReviewArray reviewArray);
+void deleteFavRest(User user, RestList restList);
+void deleteFavRestFile(User user, char* code);
+void browseReview(User user, Rest rest, ReviewArray reviewArray);
+void reviewBrowseWindowOwner(User user, Rest rest, Review review);
+void reviewSortOwner(User user, Rest rest, ReviewArray reviewArray);
+void restReset(User user, Rest rest);
+void restResetButton(User user, char* code, char* restName, char* loc, char* bHours);
+void deleteRest(User user, Rest rest);
+void deleteRestFile(User user, Rest rest);
 
 // 로그인창 화면
 void title()
@@ -502,6 +524,7 @@ void login(char* ID, char* PW)
 	}
 	if (suc == 2)
 	{
+		text(20, 27, "                                      ");
 		text(20, 27, "비밀번호가 다릅니다");
 	}
 	else if (suc == 1)
@@ -509,10 +532,20 @@ void login(char* ID, char* PW)
 		colorSetRestore();
 		clearConsole();
 		text(44, 14, "        ");
-		showMain(temps[loginID]);
+		if (temps[loginID].owner == 0)
+		{
+			FavListArray favListArray = makeFavRestList(temps[loginID]);
+			showMainUser(temps[loginID], favListArray);
+		}
+		else
+		{
+			RestListArray restListArray = makeOwnersRestList(temps[loginID]);
+			showMainOwner(temps[loginID], restListArray);
+		}
 	}
 	else
 	{
+		text(20, 27, "                                      ");
 		text(20, 27, "일치하는 ID가 없습니다.");
 	}
 	free(temps);
@@ -841,11 +874,12 @@ void pwResetCheck(char* userName, char* ID, char* birth)
 	int userNum;
 	char rePW[20] = "\0";
 
-	User* temps;
 	int size;
 	int suc = 0;
+
 	//유저정보 파일 읽기
-	temps = userInfoFileRead(&size);
+	User temp;
+	User* temps = userInfoFileRead(&size);
 
 	//입력한 정보와 유저정보가 일치하는지 탐색
 	for (int i = 0; i < size; i++)
@@ -858,6 +892,10 @@ void pwResetCheck(char* userName, char* ID, char* birth)
 				{
 					suc = 1;
 					userNum = i;
+					strcpy(temp.ID, ID);
+					strcpy(temp.userName, userName);
+					strcpy(temp.birth, birth);
+					temp.owner = temps[i].owner;
 				}
 			}
 		}
@@ -906,8 +944,8 @@ void pwResetCheck(char* userName, char* ID, char* birth)
 									colorSetRestore();
 									drawBox(5, 10, 48, 10);
 									text(19, 12, "PW가 초기화되었습니다.");
-									strcpy(temps[userNum].PW, rePW);
-									userInfoFileReWrite(temps, size);
+									strcpy(temp.PW, rePW);
+									userInfoFileReWrite(temp, userNum);
 									button = 1;
 									drawBox(22, 18, 10, 1);
 									text(27, 19, "확인");
@@ -948,8 +986,128 @@ void pwResetCheck(char* userName, char* ID, char* birth)
 	free(temps);
 }
 
-//메인화면
-void showMain(User user)
+//등록된 맛집 배열로 만들기
+FavListArray makeFavRestList(User user)
+{
+	int i = 0;
+
+	int restListSize = 0;
+
+	RestList* restList;
+
+	FavListArray favListArray;
+
+	int restSize = 0;
+	int reviewSize = 0;
+
+	int restCheck = 0;
+	int reviewCheck = 0;
+
+	//파일에서 가게정보와 리뷰정보 읽기
+	Rest* curRest = restInfoFileRead(&restSize);
+	Review* curReview = reviewFileRead(&reviewSize);
+
+	//리뷰정보와 가게정보 비교하여 리스트 사이즈 정하기
+	for (reviewCheck = 0; reviewCheck < reviewSize; reviewCheck++)
+	{
+		if (strcmp(curReview[reviewCheck].ID, user.ID) == 0)
+		{
+			for (restCheck = 0; restCheck < restSize; restCheck++)
+			{
+				if (strcmp(curRest[restCheck].code, curReview[reviewCheck].code) == 0)
+				{
+					restListSize++;
+				}
+			}
+		}
+	}
+
+	//리뷰정보와 가게정보를 리스트에 넣기
+	if (restListSize != 0)
+	{
+		restList = (RestList*)malloc(sizeof(RestList) * restListSize);
+		for (reviewCheck = 0; reviewCheck < reviewSize; reviewCheck++)
+		{
+			if (strcmp(curReview[reviewCheck].ID, user.ID) == 0)
+			{
+				for (restCheck = 0; restCheck < restSize; restCheck++)
+				{
+					if (strcmp(curRest[restCheck].code, curReview[reviewCheck].code) == 0)
+					{
+						restList[i].rest = curRest[restCheck];
+						restList[i].review = curReview[reviewCheck];
+						i++;
+					}
+				}
+			}
+		}
+	}
+	//등록된 가게가 없을때
+	else
+	{
+		Rest emptyRest = { " "," "," "," "," " };
+		Review emptyReview = { " "," "," ",0 };
+		restList = (RestList*)malloc(sizeof(RestList));
+		restList[0].rest = emptyRest;
+		restList[0].review = emptyReview;
+	}
+	free(curRest);
+	free(curReview);
+	favListArray.restList = restList;
+	favListArray.size = restListSize;
+	return favListArray;
+}
+
+//관리중인 가게 배열로 만들기
+RestListArray makeOwnersRestList(User user)
+{
+	int i = 0;
+
+	int ownersRestSize = 0;
+	int restSize = 0;
+	int restCheck = 0;
+
+	RestListArray restListArray;
+
+	Rest* ownersRest;
+
+	Rest* curRest = restInfoFileRead(&restSize);
+
+	for (restCheck = 0; restCheck < restSize; restCheck++)
+	{
+		if (strcmp(curRest[restCheck].ID, user.ID) == 0)
+		{
+			ownersRestSize++;
+		}
+	}
+
+	if (ownersRestSize != 0)
+	{
+		ownersRest = (Rest*)malloc(sizeof(Rest) * ownersRestSize);
+		for (restCheck = 0; restCheck < restSize; restCheck++)
+		{
+			if (strcmp(curRest[restCheck].ID, user.ID) == 0)
+			{
+				ownersRest[i] = curRest[restCheck];
+				i++;
+			}
+		}
+		i = 0;
+	}
+	else
+	{
+		Rest emptyRest = { " "," "," "," "," " };
+		ownersRest = (Rest*)malloc(sizeof(Rest));
+		ownersRest[0] = emptyRest;
+	}
+	free(curRest);
+	restListArray.ownersRest = ownersRest;
+	restListArray.size = ownersRestSize;
+	return restListArray;
+}
+
+//고객메인화면
+void showMainUser(User user, FavListArray favListArray)
 {
 	// 마우스 클릭 관련 변수
 	Mouse mmval;
@@ -960,199 +1118,80 @@ void showMain(User user)
 	int x, y;
 	int i = 0;
 
-	int ownersRestSize = 0;
-	int restListSize = 0;
-
-	Rest* ownersRest;
-	RestList* restList;
-
 	drawBox(10, 2, 40, 3);
 	drawBox(10, 7, 40, 3);
 	drawBox(10, 12, 40, 3);
 
 	//고객 메인 창
-	if (user.owner == 0)
-	{
-		int restSize = 0;
-		int reviewSize = 0;
-
-		int restCheck = 0;
-		int reviewCheck = 0;
-
-		drawBox(10, 23, 11, 1);
-		text(12, 24, "새맛집등록");
-		drawBox(23, 23, 13, 1);
-		text(25, 24, "회원정보수정");
-		drawBox(38, 23, 10, 1);
-		text(40, 24, "맛집정렬");
-		drawBox(10, 26, 11, 1);
-		text(13, 27, "로그아웃");
-
-		//파일에서 가게정보와 리뷰정보 읽기
-		Rest* curRest = restInfoFileRead(&restSize);
-		Review* curReview = reviewFileRead(&reviewSize);
-
-		//리뷰정보와 가게정보 비교하여 리스트 사이즈 정하기
-		for (reviewCheck = 0; reviewCheck < reviewSize; reviewCheck++)
-		{
-			if (strcmp(curReview[reviewCheck].ID, user.ID) == 0)
-			{
-				for (restCheck = 0; restCheck < restSize; restCheck++)
-				{
-					if (strcmp(curRest[restCheck].code, curReview[reviewCheck].code) == 0)
-					{
-						restListSize++;
-					}
-				}
-			}
-		}
-
-		//리뷰정보와 가게정보를 리스트에 넣기
-		if (restListSize != 0)
-		{
-			restList = (RestList*)malloc(sizeof(RestList) * restListSize);
-			for (reviewCheck = 0; reviewCheck < reviewSize; reviewCheck++)
-			{
-				if (strcmp(curReview[reviewCheck].ID, user.ID) == 0)
-				{
-					for (restCheck = 0; restCheck < restSize; restCheck++)
-					{
-						if (strcmp(curRest[restCheck].code, curReview[reviewCheck].code) == 0)
-						{
-							restList[i].rest = curRest[restCheck];
-							restList[i].review = curReview[reviewCheck];
-							i++;
-						}
-					}
-				}
-			}
-			i = 0;
-		}
-		free(curRest);
-		free(curReview);
-	}
-	//가게주인 메인 창
-	else
-	{
-		int restSize = 0;
-		int restCheck = 0;
-
-		drawBox(10, 23, 11, 1);
-		text(12, 24, "가게등록");
-		drawBox(23, 23, 13, 1);
-		text(25, 24, "회원정보수정");
-		drawBox(38, 23, 12, 1);
-		text(40, 24, "로그아웃");
-
-		Rest* curRest = restInfoFileRead(&restSize);
-
-		for (restCheck = 0; restCheck < restSize; restCheck++)
-		{
-			if (strcmp(curRest[restCheck].ID, user.ID) == 0)
-			{
-				ownersRestSize++;
-			}
-		}
-
-		if (ownersRestSize != 0)
-		{
-			ownersRest = (Rest*)malloc(sizeof(Rest) * ownersRestSize);
-			for (restCheck = 0; restCheck < restSize; restCheck++)
-			{
-				if (strcmp(curRest[restCheck].ID, user.ID) == 0)
-				{
-					ownersRest[i] = curRest[restCheck];
-					i++;
-				}
-			}
-			i = 0;
-		}
-		free(curRest);
-	}
-
+	drawBox(10, 23, 11, 1);
+	text(12, 24, "새맛집등록");
+	drawBox(23, 23, 13, 1);
+	text(25, 24, "회원정보수정");
+	drawBox(38, 23, 10, 1);
+	text(40, 24, "맛집정렬");
+	drawBox(10, 26, 11, 1);
+	text(13, 27, "로그아웃");
 
 	while (1)
 	{
 		//유저에게 보여줄 화면
-		if (user.owner == 0)
+		colorSetRestore();
+		text(3, 19, "★ = 지나가다 있으면 편하게 식사할 수 있는 가게 (접근성)");
+		text(3, 20, "● = 남에게 추천해줄만한 호불호 없는 요리의 가게 (요리)");
+		text(3, 21, "◆ = 저렴한 가격 대비 만족도가 높은 가게 (가격)");
+		text(55, 9, "▲");
+		text(55, 11, "▼");
+		if (favListArray.size == 0)
 		{
 			colorSetRestore();
-			text(3, 19, "★ = 지나가다 있으면 편하게 식사할 수 있는 가게 (접근성)");
-			text(3, 20, "● = 남에게 추천해줄만한 호불호 없는 요리의 가게 (요리)");
-			text(3, 21, "◆ = 저렴한 가격 대비 만족도가 높은 가게 (가격)");
-			if (restListSize == 0)
-			{
-				colorSetRestore();
-				text(12, 4, "등록된 맛집이 없습니다.");
-			}
-			else
-			{
-				colorSetRestore();
-				text(12, 4, restList[i].rest.restName);
-				if ((restList[i].review.repu / 100) == 1)
-				{
-					text(12, 5, "★");
-				}
-				if (((restList[i].review.repu % 100) / 10) == 1)
-				{
-					text(14, 5, "●");
-				}
-				if ((restList[i].review.repu % 10) == 1)
-				{
-					text(16, 5, "◆");
-				}
-				if (restListSize >= 2)
-				{
-					text(12, 9, restList[i + 1].rest.restName);
-					if ((restList[i + 1].review.repu / 100) == 1)
-					{
-						text(12, 10, "★");
-					}
-					if (((restList[i + 1].review.repu % 100) / 10) == 1)
-					{
-						text(14, 10, "●");
-					}
-					if ((restList[i + 1].review.repu % 10) == 1)
-					{
-						text(16, 10, "◆");
-					}
-				}
-				if (restListSize >= 3)
-				{
-					text(12, 14, restList[i + 2].rest.restName);
-					if ((restList[i + 2].review.repu / 100) == 1)
-					{
-						text(12, 15, "★");
-					}
-					if (((restList[i + 2].review.repu % 100) / 10) == 1)
-					{
-						text(14, 15, "●");
-					}
-					if ((restList[i + 2].review.repu % 10) == 1)
-					{
-						text(16, 15, "◆");
-					}
-				}
-			}
+			text(12, 4, "등록된 맛집이 없습니다.");
 		}
 		else
 		{
-			if (ownersRestSize == 0)
+			colorSetRestore();
+			text(12, 4, favListArray.restList[i].rest.restName);
+			if ((favListArray.restList[i].review.repu / 100) == 1)
 			{
-				colorSetRestore();
-				text(12, 4, "(이것은 오류입니다.)");
+				text(12, 5, "★");
 			}
-			else
+			if (((favListArray.restList[i].review.repu % 100) / 10) == 1)
 			{
-				colorSetRestore();
-				text(12, 4, ownersRest[i].restName);
-				if (ownersRestSize >= 2)
+				text(14, 5, "●");
+			}
+			if ((favListArray.restList[i].review.repu % 10) == 1)
+			{
+				text(16, 5, "◆");
+			}
+			if (favListArray.size >= 2)
+			{
+				text(12, 9, favListArray.restList[i + 1].rest.restName);
+				if ((favListArray.restList[i + 1].review.repu / 100) == 1)
 				{
-					text(12, 9, ownersRest[i + 1].restName);
+					text(12, 10, "★");
 				}
-				if (ownersRestSize >= 3)
+				if (((favListArray.restList[i + 1].review.repu % 100) / 10) == 1)
 				{
-					text(12, 14, ownersRest[i + 2].restName);
+					text(14, 10, "●");
+				}
+				if ((favListArray.restList[i + 1].review.repu % 10) == 1)
+				{
+					text(16, 10, "◆");
+				}
+			}
+			if (favListArray.size >= 3)
+			{
+				text(12, 14, favListArray.restList[i + 2].rest.restName);
+				if ((favListArray.restList[i + 2].review.repu / 100) == 1)
+				{
+					text(12, 15, "★");
+				}
+				if (((favListArray.restList[i + 2].review.repu % 100) / 10) == 1)
+				{
+					text(14, 15, "●");
+				}
+				if ((favListArray.restList[i + 2].review.repu % 10) == 1)
+				{
+					text(16, 15, "◆");
 				}
 			}
 		}
@@ -1167,79 +1206,52 @@ void showMain(User user)
 				{
 					if (mmval.rec.Event.MouseEvent.dwEventFlags & MOUSE_WHEELED)
 					{
-						if (user.owner == 0)
-						{
-							// 스크롤 방향 확인
-							short wheelDelta = HIWORD(mmval.rec.Event.MouseEvent.dwButtonState);
+						// 스크롤 방향 확인
+						short wheelDelta = HIWORD(mmval.rec.Event.MouseEvent.dwButtonState);
 
-							//마우스 위로 스크롤 됨
-							if (wheelDelta > 0)
+						//마우스 위로 스크롤 됨
+						if (wheelDelta > 0)
+						{
+							if ((favListArray.size > 3) && (0 < i))
 							{
-								if ((restListSize > 3) && (0 < i))
-								{
-									text(12, 4, "                ");
-									text(12, 9, "                ");
-									text(12, 14, "                ");
-									text(12, 5, "                ");
-									text(12, 10, "                ");
-									text(12, 15, "                ");
-									i--;
-								}
-							}
-							//마우스 아래로 스크롤 됨
-							else if (wheelDelta < 0)
-							{
-								if ((restListSize > 3) && (restListSize > i + 3))
-								{
-									text(12, 4, "                ");
-									text(12, 9, "                ");
-									text(12, 14, "                ");
-									text(12, 5, "                ");
-									text(12, 10, "                ");
-									text(12, 15, "                ");
-									i++;
-								}
+								text(12, 4, "                ");
+								text(12, 9, "                ");
+								text(12, 14, "                ");
+								text(12, 5, "                ");
+								text(12, 10, "                ");
+								text(12, 15, "                ");
+								i--;
 							}
 						}
-						else
+						//마우스 아래로 스크롤 됨
+						else if (wheelDelta < 0)
 						{
-							// 스크롤 방향 확인
-							short wheelDelta = HIWORD(mmval.rec.Event.MouseEvent.dwButtonState);
-
-							//마우스 위로 스크롤 됨
-							if (wheelDelta > 0)
+							if ((favListArray.size > 3) && (favListArray.size > i + 3))
 							{
-								if ((ownersRestSize > 3) && (0 < i))
-								{
-									text(12, 4, "                ");
-									text(12, 9, "                ");
-									text(12, 14, "                ");
-									i--;
-								}
-							}
-							//마우스 아래로 스크롤 됨
-							else if (wheelDelta < 0)
-							{
-								if ((ownersRestSize > 3) && (ownersRestSize > i + 3))
-								{
-									text(12, 4, "                ");
-									text(12, 9, "                ");
-									text(12, 14, "                ");
-									i++;
-								}
+								text(12, 4, "                ");
+								text(12, 9, "                ");
+								text(12, 14, "                ");
+								text(12, 5, "                ");
+								text(12, 10, "                ");
+								text(12, 15, "                ");
+								i++;
 							}
 						}
 					}
+
 				}
 				if ((1 <= y) && (y <= 5))
 				{
-					if ((restListSize != 0) || (ownersRestSize != 0))
+					if (favListArray.size != 0)
 					{
 						text(9, 4, ">");
 						if (mmval.rec.EventType == MOUSE_EVENT)
 						{
 							if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
 							{
+								colorSetRestore();
+								clearConsole();
+								favRestBrowse(user, favListArray.restList[i]);
 							}
 						}
 					}
@@ -1250,13 +1262,16 @@ void showMain(User user)
 				}
 				if ((6 <= y) && (y <= 10))
 				{
-					if ((restListSize >= 2) || (ownersRestSize >= 2))
+					if (favListArray.size >= 2)
 					{
 						text(9, 9, ">");
 						if (mmval.rec.EventType == MOUSE_EVENT)
 						{
 							if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
 							{
+								colorSetRestore();
+								clearConsole();
+								favRestBrowse(user, favListArray.restList[i + 1]);
 							}
 						}
 					}
@@ -1267,13 +1282,16 @@ void showMain(User user)
 				}
 				if ((11 <= y) && (y <= 15))
 				{
-					if ((restListSize >= 3) || (ownersRestSize >= 3))
+					if (favListArray.size >= 3)
 					{
 						text(9, 14, ">");
 						if (mmval.rec.EventType == MOUSE_EVENT)
 						{
 							if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
 							{
+								colorSetRestore();
+								clearConsole();
+								favRestBrowse(user, favListArray.restList[i + 2]);
 							}
 						}
 					}
@@ -1295,49 +1313,23 @@ void showMain(User user)
 			//새맛집등록 버튼과 가게등록 버튼
 			if ((9 <= x) && (x <= 22))
 			{
-				if (user.owner == 0)
+				colorSetSelect();
+				text(12, 24, "새맛집등록");
+				if (mmval.rec.EventType == MOUSE_EVENT)
 				{
-					colorSetSelect();
-					text(12, 24, "새맛집등록");
-					if (mmval.rec.EventType == MOUSE_EVENT)
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
 					{
-						if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
-						{
-							colorSetRestore();
-							clearConsole();
-							text(12, 24, "              ");
-							newFavRest(user);
-						}
-					}
-				}
-				else
-				{
-					colorSetSelect();
-					text(12, 24, "가게등록");
-					if (mmval.rec.EventType == MOUSE_EVENT)
-					{
-						if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
-						{
-							colorSetRestore();
-							clearConsole();
-							text(12, 24, "          ");
-							newRest(user, FALSE);
-						}
+						colorSetRestore();
+						clearConsole();
+						text(12, 24, "              ");
+						newFavRest(user);
 					}
 				}
 			}
 			else
 			{
-				if (user.owner == 0)
-				{
-					colorSetRestore();
-					text(12, 24, "새맛집등록");
-				}
-				else
-				{
-					colorSetRestore();
-					text(12, 24, "가게등록");
-				}
+				colorSetRestore();
+				text(12, 24, "새맛집등록");
 			}
 			//회원정보수정 버튼
 			if ((23 <= x) && (x <= 36))
@@ -1363,88 +1355,46 @@ void showMain(User user)
 			//맛집정렬 버튼과 가게주인의 로그아웃 버튼
 			if ((37 <= x) && (x <= 51))
 			{
-				if (user.owner == 0)
+				colorSetSelect();
+				text(40, 24, "맛집정렬");
+				if (mmval.rec.EventType == MOUSE_EVENT)
 				{
-					colorSetSelect();
-					text(40, 24, "맛집정렬");
-					if (mmval.rec.EventType == MOUSE_EVENT)
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
 					{
-						if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
-						{
-						}
-					}
-				}
-				else
-				{
-					colorSetSelect();
-					text(40, 24, "로그아웃");
-					if (mmval.rec.EventType == MOUSE_EVENT)
-					{
-						if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
-						{
-							colorSetRestore();
-							clearConsole();
-							text(39, 24, "          ");
-							title();
-						}
+						colorSetRestore();
+						favRestSort(user, favListArray);
 					}
 				}
 			}
 			else
 			{
-				if (user.owner == 0)
-				{
-					colorSetRestore();
-					text(40, 24, "맛집정렬");
-				}
-				else
-				{
-					colorSetRestore();
-					text(40, 24, "로그아웃");
-				}
+				colorSetRestore();
+				text(40, 24, "맛집정렬");
 			}
 		}
 		else
 		{
-			if (user.owner == 0)
-			{
-				colorSetRestore();
-				text(12, 24, "새맛집등록");
-				text(25, 24, "회원정보수정");
-				text(40, 24, "맛집정렬");
-			}
-			else
-			{
-				colorSetRestore();
-				text(12, 24, "가게등록");
-				text(25, 24, "회원정보수정");
-				text(40, 24, "로그아웃");
-			}
+			colorSetRestore();
+			text(12, 24, "새맛집등록");
+			text(25, 24, "회원정보수정");
+			text(40, 24, "맛집정렬");
 		}
 		//일반고객의 로그아웃 버튼
-		if (user.owner == 0)
+		if ((25 <= y) && (y <= 27))
 		{
-			if ((25 <= y) && (y <= 27))
+			if ((9 <= x) && (x <= 22))
 			{
-				if ((9 <= x) && (x <= 22))
+				colorSetSelect();
+				text(13, 27, "로그아웃");
+				if (mmval.rec.EventType == MOUSE_EVENT)
 				{
-					colorSetSelect();
-					text(13, 27, "로그아웃");
-					if (mmval.rec.EventType == MOUSE_EVENT)
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
 					{
-						if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
-						{
-							colorSetRestore();
-							clearConsole();
-							text(13, 27, "          ");
-							title();
-						}
+						colorSetRestore();
+						clearConsole();
+						text(13, 27, "          ");
+						title();
 					}
-				}
-				else
-				{
-					colorSetRestore();
-					text(13, 27, "로그아웃");
 				}
 			}
 			else
@@ -1453,9 +1403,240 @@ void showMain(User user)
 				text(13, 27, "로그아웃");
 			}
 		}
+		else
+		{
+			colorSetRestore();
+			text(13, 27, "로그아웃");
+		}
 	}
-	free(restList);
-	free(ownersRest);
+}
+
+//가게주인메인화면
+void showMainOwner(User user, RestListArray restListArray)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+	int i = 0;
+
+	drawBox(10, 2, 40, 3);
+	drawBox(10, 7, 40, 3);
+	drawBox(10, 12, 40, 3);
+
+	//가게주인 메인 창
+	drawBox(10, 23, 11, 1);
+	text(12, 24, "가게등록");
+	drawBox(23, 23, 13, 1);
+	text(25, 24, "회원정보수정");
+	drawBox(38, 23, 12, 1);
+	text(40, 24, "로그아웃");
+
+	while (1)
+	{
+		text(55, 9, "▲");
+		text(55, 11, "▼");
+		if (restListArray.size == 0)
+		{
+			colorSetRestore();
+			text(12, 4, "(이것은 오류입니다.)");
+		}
+		else
+		{
+			colorSetRestore();
+			text(12, 4, restListArray.ownersRest[i].restName);
+			if (restListArray.size >= 2)
+			{
+				text(12, 9, restListArray.ownersRest[i + 1].restName);
+			}
+			if (restListArray.size >= 3)
+			{
+				text(12, 14, restListArray.ownersRest[i + 2].restName);
+			}
+		}
+		// 마우스 이동과 클릭시 처리
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((2 <= y) && (y <= 16))
+		{
+			if ((9 <= x) && (x <= 51))
+			{
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwEventFlags & MOUSE_WHEELED)
+					{
+						// 스크롤 방향 확인
+						short wheelDelta = HIWORD(mmval.rec.Event.MouseEvent.dwButtonState);
+
+						//마우스 위로 스크롤 됨
+						if (wheelDelta > 0)
+						{
+							if ((restListArray.size > 3) && (0 < i))
+							{
+								text(12, 4, "                ");
+								text(12, 9, "                ");
+								text(12, 14, "                ");
+								i--;
+							}
+						}
+						//마우스 아래로 스크롤 됨
+						else if (wheelDelta < 0)
+						{
+							if ((restListArray.size > 3) && (restListArray.size > i + 3))
+							{
+								text(12, 4, "                ");
+								text(12, 9, "                ");
+								text(12, 14, "                ");
+								i++;
+							}
+						}
+					}
+				}
+				if ((1 <= y) && (y <= 5))
+				{
+					if (restListArray.size != 0)
+					{
+						text(9, 4, ">");
+						if (mmval.rec.EventType == MOUSE_EVENT)
+						{
+							if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+							{
+								colorSetRestore();
+								clearConsole();
+								ownersRestBrowse(user, restListArray.ownersRest[i]);
+							}
+						}
+					}
+				}
+				else
+				{
+					text(9, 4, " ");
+				}
+				if ((6 <= y) && (y <= 10))
+				{
+					if (restListArray.size >= 2)
+					{
+						text(9, 9, ">");
+						if (mmval.rec.EventType == MOUSE_EVENT)
+						{
+							if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+							{
+								colorSetRestore();
+								clearConsole();
+								ownersRestBrowse(user, restListArray.ownersRest[i + 1]);
+							}
+						}
+					}
+				}
+				else
+				{
+					text(9, 9, " ");
+				}
+				if ((11 <= y) && (y <= 15))
+				{
+					if (restListArray.size >= 3)
+					{
+						text(9, 14, ">");
+						if (mmval.rec.EventType == MOUSE_EVENT)
+						{
+							if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+							{
+								colorSetRestore();
+								clearConsole();
+								ownersRestBrowse(user, restListArray.ownersRest[i + 2]);
+							}
+						}
+					}
+				}
+				else
+				{
+					text(9, 14, " ");
+				}
+			}
+			else
+			{
+				text(9, 4, " ");
+				text(9, 9, " ");
+				text(9, 14, " ");
+			}
+		}
+		if ((22 <= y) && (y <= 24))
+		{
+			//가게등록 버튼
+			if ((9 <= x) && (x <= 22))
+			{
+				colorSetSelect();
+				text(12, 24, "가게등록");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						clearConsole();
+						text(12, 24, "          ");
+						newRest(user, FALSE);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(12, 24, "가게등록");
+			}
+			//회원정보수정 버튼
+			if ((23 <= x) && (x <= 36))
+			{
+				colorSetSelect();
+				text(25, 24, "회원정보수정");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						clearConsole();
+						text(25, 24, "             ");
+						userInfoReset(user);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(25, 24, "회원정보수정");
+			}
+			//가게주인의 로그아웃 버튼
+			if ((37 <= x) && (x <= 51))
+			{
+				colorSetSelect();
+				text(40, 24, "로그아웃");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						clearConsole();
+						text(39, 24, "          ");
+						title();
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(40, 24, "로그아웃");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			text(12, 24, "가게등록");
+			text(25, 24, "회원정보수정");
+			text(40, 24, "로그아웃");
+		}
+	}
 }
 
 //가게등록 화면
@@ -1571,7 +1752,8 @@ void newRest(User user, bool regist)
 							clearConsole();
 							colorSetRestore();
 							text(39, 24, "       ");
-							showMain(user);
+							RestListArray restListArray = makeOwnersRestList(user);
+							showMainOwner(user, restListArray);
 						}
 					}
 				}
@@ -1669,7 +1851,8 @@ void newRestInput(User user, char* restName, char* loc, char* bHours, bool regis
 									else
 									{
 										text(16, 24, "          ");
-										showMain(user);
+										RestListArray restListArray = makeOwnersRestList(user);
+										showMainOwner(user, restListArray);
 									}
 								}
 							}
@@ -1723,7 +1906,7 @@ void newFavRest(User user)
 	int repu = 0;
 	char* usersReview = (char*)calloc(300, sizeof(char));
 
-	// 가게등록 창
+	// 맛집등록 창
 	drawBox(17, 3, 30, 1);
 
 	text(19, 7, "★");
@@ -1733,7 +1916,7 @@ void newFavRest(User user)
 	drawBox(17, 14, 30, 7);
 
 	drawBox(10, 23, 11, 1);
-	text(12, 24, "가게등록");
+	text(12, 24, "맛집등록");
 	drawBox(37, 23, 11, 1);
 	text(39, 24, "돌아가기");
 
@@ -1853,7 +2036,7 @@ void newFavRest(User user)
 			if ((9 <= x) && (x <= 24))
 			{
 				colorSetSelect();
-				text(12, 24, "가게등록");
+				text(12, 24, "맛집등록");
 				if (mmval.rec.EventType == MOUSE_EVENT)
 				{
 					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
@@ -1866,7 +2049,7 @@ void newFavRest(User user)
 			else
 			{
 				colorSetRestore();
-				text(12, 24, "가게등록");
+				text(12, 24, "맛집등록");
 			}
 			//돌아가기 버튼
 			if ((36 <= x) && (x <= 49))
@@ -1880,7 +2063,8 @@ void newFavRest(User user)
 						colorSetRestore();
 						clearConsole();
 						text(39, 24, "          ");
-						showMain(user);
+						FavListArray favListArray = makeFavRestList(user);
+						showMainUser(user, favListArray);
 					}
 				}
 			}
@@ -1893,7 +2077,7 @@ void newFavRest(User user)
 		else
 		{
 			colorSetRestore();
-			text(12, 24, "가게등록");
+			text(12, 24, "맛집등록");
 			colorSetRestore();
 			text(39, 24, "돌아가기");
 		}
@@ -1923,8 +2107,8 @@ void newFavRestInput(User user, char* restName, int repu, char* usersReview)
 
 	Review review;
 	strcpy(review.ID, user.ID);
-	review.repu = repu;
 	strcpy(review.usersReview, usersReview);
+	review.repu = repu;
 
 	//파일에서 가게정보 읽기
 	Rest* restList = restInfoFileRead(&restSize);
@@ -2009,7 +2193,8 @@ void newFavRestInput(User user, char* restName, int repu, char* usersReview)
 										clearConsole();
 										colorSetRestore();
 										text(24, 19, "          ");
-										showMain(user);
+										FavListArray favListArray = makeFavRestList(user);
+										showMainUser(user, favListArray);
 									}
 								}
 							}
@@ -2223,7 +2408,8 @@ void newFavRestInputDupThree(Review review, User user)
 							clearConsole();
 							colorSetRestore();
 							text(24, 19, "         ");
-							showMain(user);
+							FavListArray favListArray = makeFavRestList(user);
+							showMainUser(user, favListArray);
 						}
 					}
 				}
@@ -2308,7 +2494,7 @@ void userInfoReset(User user)
 		num++;
 	}
 
-	// 가입 창
+	// 회원정보수정 창
 	drawBox(17, 10, 25, 1);
 	drawBox(17, 13, 25, 1);
 	drawBox(17, 16, 25, 1);
@@ -2421,7 +2607,16 @@ void userInfoReset(User user)
 						colorSetRestore();
 						clearConsole();
 						text(39, 24, "            ");
-						showMain(user);
+						if (user.owner == 0)
+						{
+							FavListArray favListArray = makeFavRestList(user);
+							showMainUser(user, favListArray);
+						}
+						else
+						{
+							RestListArray restListArray = makeOwnersRestList(user);
+							showMainOwner(user, restListArray);
+						}
 					}
 				}
 			}
@@ -2452,11 +2647,11 @@ void userInfoResetInput(User user, char* userName, char* PW, char* birth)
 
 	int x, y;
 
-	User* temps;
 	int size;
 	int resetID;
 	int suc = 0;
-	temps = userInfoFileRead(&size);
+
+	User* temps = userInfoFileRead(&size);
 
 	for (int i = 0; i < size; i++)
 	{
@@ -2475,8 +2670,7 @@ void userInfoResetInput(User user, char* userName, char* PW, char* birth)
 				strcpy(user.userName, userName);
 				strcpy(user.PW, PW);
 				strcpy(user.birth, birth);
-				temps[resetID] = user;
-				userInfoFileReWrite(temps, size);
+				userInfoFileReWrite(user, resetID);
 				drawBox(15, 10, 28, 10);
 				text(18, 12, "회원정보가 수정되었습니다");
 				drawBox(22, 18, 10, 1);
@@ -2498,7 +2692,16 @@ void userInfoResetInput(User user, char* userName, char* PW, char* birth)
 									clearConsole();
 									colorSetRestore();
 									text(27, 19, "       ");
-									showMain(user);
+									if (user.owner == 0)
+									{
+										FavListArray favListArray = makeFavRestList(user);
+										showMainUser(user, favListArray);
+									}
+									else
+									{
+										RestListArray restListArray = makeOwnersRestList(user);
+										showMainOwner(user, restListArray);
+									}
 								}
 							}
 						}
@@ -2620,20 +2823,20 @@ void userResignCheck(User user)
 
 	int x, y;
 
-	int userSize, restSize, reviewSize, newRestSize, newReviewSize;
+	int userSize, restSize, reviewSize;
 
 	int resignID;
+	int* usersResignReview;
 	int* resignRest;
 	int* resignReview;
 
-	int resignRestSize = 0; 
+	int usersReviewSize = 0;
+	int resignRestSize = 0;
 	int resignReviewSize = 0;
 
 	User* tempsUser = userInfoFileRead(&userSize);
 	Rest* tempsRest = restInfoFileRead(&restSize);
 	Review* tempsReview = reviewFileRead(&reviewSize);
-	newRestSize = restSize;
-	newReviewSize = reviewSize;
 
 	for (int i = 0; i < userSize; i++)
 	{
@@ -2643,8 +2846,30 @@ void userResignCheck(User user)
 		}
 	}
 
+	//고객일 경우 삭제할 리뷰를 배열에 저장한다.
+	if (user.owner == 0)
+	{
+		for (int i = 0; i < reviewSize; i++)
+		{
+			if (strcmp(tempsReview[i].ID, user.ID) == 0)
+			{
+				usersReviewSize++;
+			}
+		}
+
+		usersResignReview = (int*)malloc(sizeof(int) * usersReviewSize);
+		usersReviewSize = 0;
+		for (int i = 0; i < reviewSize; i++)
+		{
+			if (strcmp(tempsReview[i].ID, user.ID) == 0)
+			{
+				usersResignReview[usersReviewSize] = i;
+				usersReviewSize++;
+			}
+		}
+	}
 	//가게주인일경우 삭제할 가게와 리뷰를 배열에 저장한다.
-	if (user.owner == 1)
+	else
 	{
 		for (int i = 0; i < restSize; i++)
 		{
@@ -2685,38 +2910,30 @@ void userResignCheck(User user)
 	}
 
 	//파일에서 해당 유저 지우기
-	for (int i = resignID; i < userSize; i++)
-	{
-		tempsUser[i] = tempsUser[i + 1];
-	}
-	realloc(tempsUser, sizeof(User) * (userSize - 1));
-	userInfoFileReWrite(tempsUser,userSize-1);
+	userInfoFileDeleteLine(resignID);
 
-	if (user.owner == 1)
+	//고객이면 등록한 리뷰 지우기
+	if (user.owner == 0)
+	{
+		for (int i = 0; i < usersReviewSize; i++)
+		{
+			reviewFileDeleteLine(usersResignReview[i]);
+		}
+	}
+	//가게주인이면 가게와 리뷰 지우기
+	else
 	{
 		//파일에서 해당 가게 지우기
 		for (int i = 0; i < resignRestSize; i++)
 		{
-			for (int j = resignRest[i]; j < restSize; j++)
-			{
-				tempsRest[j] = tempsRest[j + 1];
-				newRestSize--;
-			}
+			restInfoFileDeleteLine(resignRest[i]);
 		}
-		realloc(tempsRest, sizeof(Rest) * newRestSize);
-		restInfoFileReWrite(tempsRest, newRestSize);
 
 		//파일에서 해당 리뷰 지우기
 		for (int i = 0; i < resignReviewSize; i++)
 		{
-			for (int j = resignReview[i]; j < reviewSize; j++)
-			{
-				tempsReview[j] = tempsReview[j + 1];
-				newReviewSize--;
-			}
+			reviewFileDeleteLine(resignReview[i]);
 		}
-		realloc(tempsReview, sizeof(Review) * newReviewSize);
-		reviewFileReWrite(tempsReview, newReviewSize);
 	}
 
 	drawBox(9, 10, 38, 10);
@@ -2742,6 +2959,2069 @@ void userResignCheck(User user)
 						colorSetRestore();
 						text(27, 19, "       ");
 						title();
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(27, 19, "확인");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			text(27, 19, "확인");
+		}
+	}
+}
+
+//맛집정렬
+void favRestSort(User user, FavListArray favListArray)
+{
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+
+	int option = 0;
+
+	drawBox(9, 10, 38, 10);
+
+	text(24, 14, "가나다순(가게이름)");
+	text(24, 16, "평점별");
+
+	drawBox(22, 18, 10, 1);
+	text(27, 19, "확인");
+	while (1)
+	{
+		colorSetRestore();
+		text(20, 12, "옵션을 선택해주세요");
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((23 <= x) && (x <= 40))
+		{
+			if ((13 <= y) && (y <= 14))
+			{
+				colorSetSelect();
+				text(24, 14, "가나다순(가게이름)");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						text(22, 14, ">");
+						text(22, 16, " ");
+						option = 1;
+					}
+				}
+
+			}
+			else
+			{
+				colorSetRestore();
+				text(24, 14, "가나다순(가게이름)");
+			}
+			if ((15 <= y) && (y <= 16))
+			{
+				colorSetSelect();
+				text(24, 16, "평점별");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						text(22, 16, ">");
+						text(22, 14, " ");
+						option = 2;
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(24, 16, "평점별");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			text(24, 14, "가나다순(가게이름)");
+			text(24, 16, "평점별");
+		}
+		if ((21 <= x) && (x <= 33))
+		{
+			if ((17 <= y) && (y <= 19))
+			{
+				colorSetSelect();
+				text(27, 19, "확인");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						favRestSortButton(user, favListArray, option);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(27, 19, "확인");
+			}
+		}
+	}
+}
+
+//맛집정렬버튼
+void favRestSortButton(User user, FavListArray favListArray, int option)
+{
+	int i, j;
+	RestList tempRest;
+	//가나다순
+	if (favListArray.size == 0 || favListArray.size == 1)
+	{
+		drawBox(18, 26, 30, 1);
+		text(20, 27, "정렬할 가게가 없습니다.");
+	}
+	else if (option == 1)
+	{
+		for (i = 0; i < favListArray.size; i++)
+		{
+			for (j = 0; j < favListArray.size - i - 1; j++)
+			{
+				if (strcmp(favListArray.restList[j].rest.restName, favListArray.restList[j + 1].rest.restName) > 0)
+				{
+					tempRest = favListArray.restList[j];
+					favListArray.restList[j] = favListArray.restList[j + 1];
+					favListArray.restList[j + 1] = tempRest;
+				}
+			}
+		}
+		clearConsole();
+		showMainUser(user, favListArray);
+	}
+	else if (option == 2)
+	{
+		for (i = 0; i < favListArray.size; i++)
+		{
+			for (j = 0; j < favListArray.size - i - 1; j++)
+			{
+				if (favListArray.restList[j].review.repu < favListArray.restList[j + 1].review.repu)
+				{
+					tempRest = favListArray.restList[j];
+					favListArray.restList[j] = favListArray.restList[j + 1];
+					favListArray.restList[j + 1] = tempRest;
+				}
+			}
+		}
+		clearConsole();
+		showMainUser(user, favListArray);
+	}
+	else
+	{
+		drawBox(18, 26, 30, 1);
+		text(20, 27, "정렬옵션을 선택해 주세요.");
+	}
+}
+
+//맛집조회
+void favRestBrowse(User user, RestList restList)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+
+	drawBox(10, 23, 11, 1);
+	text(12, 24, "리뷰수정");
+	drawBox(23, 23, 13, 1);
+	text(25, 24, "다른리뷰보기");
+	drawBox(38, 23, 10, 1);
+	text(40, 24, "맛집삭제");
+	drawBox(10, 26, 11, 1);
+	text(13, 27, "돌아가기");
+	while (1)
+	{
+		colorSetRestore();
+		text(3, 3, "가게이름");
+		text(15, 3, restList.rest.restName);
+
+		text(3, 5, "가게위치");
+		text(15, 5, restList.rest.loc);
+
+		text(3, 7, "영업시간");
+		text(15, 7, restList.rest.bHours);
+
+		text(3, 9, "평점");
+		if ((restList.review.repu / 100) == 1)
+		{
+			text(15, 9, "★");
+		}
+		if (((restList.review.repu % 100) / 10) == 1)
+		{
+			text(17, 9, "●");
+		}
+		if ((restList.review.repu % 10) == 1)
+		{
+			text(18, 9, "◆");
+		}
+
+		text(3, 11, "리뷰");
+		textOutput(15, 11, restList.review.usersReview);
+
+		// 마우스 이동과 클릭시 처리
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((22 <= y) && (y <= 24))
+		{
+			//리뷰수정 버튼
+			if ((9 <= x) && (x <= 22))
+			{
+				colorSetSelect();
+				text(12, 24, "리뷰수정");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						clearConsole();
+						text(12, 24, "           ");
+						reviewReset(user, restList);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(12, 24, "리뷰수정");
+			}
+			//다른리뷰보기 버튼
+			if ((23 <= x) && (x <= 36))
+			{
+				colorSetSelect();
+				text(25, 24, "다른리뷰보기");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						clearConsole();
+						text(25, 24, "             ");
+						ReviewArray reviewArray = makeReviewArray(restList.rest);
+						browseOthersReview(user, restList , reviewArray);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(25, 24, "다른리뷰보기");
+			}
+			//맛집삭제 버튼
+			if ((37 <= x) && (x <= 51))
+			{
+				colorSetSelect();
+				text(40, 24, "맛집삭제");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						deleteFavRest(user, restList);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(40, 24, "맛집삭제");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			text(12, 24, "리뷰수정");
+			text(25, 24, "다른리뷰보기");
+			text(40, 24, "맛집삭제");
+		}
+		//돌아가기 버튼
+		if ((25 <= y) && (y <= 27))
+		{
+			if ((9 <= x) && (x <= 22))
+			{
+				colorSetSelect();
+				text(13, 27, "돌아가기");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						clearConsole();
+						colorSetRestore();
+						text(13, 27, "            ");
+						FavListArray favListArray = makeFavRestList(user);
+						showMainUser(user, favListArray);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(13, 27, "돌아가기");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			text(13, 27, "돌아가기");
+		}
+	}
+}
+
+//가게조회
+void ownersRestBrowse(User user, Rest rest)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+
+	drawBox(10, 23, 11, 1);
+	text(12, 24, "리뷰보기");
+	drawBox(23, 23, 13, 1);
+	text(25, 24, "가게정보수정");
+	drawBox(38, 23, 10, 1);
+	text(40, 24, "가게삭제");
+	drawBox(10, 26, 11, 1);
+	text(13, 27, "돌아가기");
+	while (1)
+	{
+		colorSetRestore();
+		text(3, 3, "가게이름");
+		text(15, 3, rest.restName);
+
+		text(3, 5, "가게위치");
+		text(15, 5, rest.loc);
+
+		text(3, 7, "영업시간");
+		text(15, 7, rest.bHours);
+
+		// 마우스 이동과 클릭시 처리
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((22 <= y) && (y <= 24))
+		{
+			//리뷰보기 버튼
+			if ((9 <= x) && (x <= 22))
+			{
+				colorSetSelect();
+				text(12, 24, "리뷰보기");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						clearConsole();
+						colorSetRestore();
+						text(12, 24, "           ");
+						ReviewArray reviewArray = makeReviewArray(rest);
+						browseReview(user, rest, reviewArray);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(12, 24, "리뷰보기");
+			}
+			//회원정보수정 버튼
+			if ((23 <= x) && (x <= 36))
+			{
+				colorSetSelect();
+				text(25, 24, "가게정보수정");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(25, 24, "가게정보수정");
+			}
+			//가게삭제 버튼
+			if ((37 <= x) && (x <= 51))
+			{
+				colorSetSelect();
+				text(40, 24, "가게삭제");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(40, 24, "가게삭제");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			text(12, 24, "리뷰보기");
+			text(25, 24, "가게정보수정");
+			text(40, 24, "가게삭제");
+		}
+		//돌아가기 버튼
+		if ((25 <= y) && (y <= 27))
+		{
+			if ((9 <= x) && (x <= 22))
+			{
+				colorSetSelect();
+				text(13, 27, "돌아가기");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						clearConsole();
+						colorSetRestore();
+						text(13, 27, "           ");
+						RestListArray restListArray = makeOwnersRestList(user);
+						showMainOwner(user, restListArray);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(13, 27, "돌아가기");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			text(13, 27, "돌아가기");
+		}
+	}
+}
+
+//리뷰수정
+void reviewReset(User user, RestList restList)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+
+	int repu = restList.review.repu;
+	char* usersReview = (char*)calloc(300, sizeof(char));
+	strcpy(usersReview, restList.review.usersReview);
+
+	// 리뷰수정 창
+
+	text(19, 7, "★");
+	text(22, 7, "●");
+	text(25, 7, "◆");
+
+	drawBox(17, 14, 30, 7);
+
+	drawBox(10, 23, 11, 1);
+	text(12, 24, "리뷰수정");
+	drawBox(37, 23, 11, 1);
+	text(39, 24, "돌아가기");
+
+	textOutput(19, 15, usersReview);
+
+	while (1)
+	{
+		colorSetRestore();
+		text(7, 4, "가게이름");
+		text(17, 4, restList.rest.restName);
+		text(7, 7, "평점");
+
+		if ((repu / 100) == 1)
+		{
+			colorSetSelect();
+			text(19, 7, "★");
+			if ((repu % 100 / 10) == 1)
+			{
+				text(22, 7, "●");
+				if ((repu % 10) == 1)
+				{
+					text(25, 7, "◆");
+				}
+				else
+				{
+					colorSetRestore();
+					text(25, 7, "◆");
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(22, 7, "●");
+				if ((repu % 10) == 1)
+				{
+					colorSetSelect();
+					text(25, 7, "◆");
+				}
+				else
+				{
+					colorSetRestore();
+					text(25, 7, "◆");
+				}
+			}
+		}
+		else if ((repu % 100 / 10) == 1)
+		{
+			text(19, 7, "★");
+			colorSetSelect();
+			text(22, 7, "●");
+			if ((repu % 10) == 1)
+			{
+				text(25, 7, "◆");
+			}
+			else
+			{
+				colorSetRestore();
+				text(25, 7, "◆");
+			}
+		}
+		else if ((repu % 10) == 1)
+		{
+			text(19, 7, "★");
+			text(22, 7, "●");
+			colorSetSelect();
+			text(25, 7, "◆");
+		}
+		else
+		{
+			colorSetRestore();
+			text(19, 7, "★");
+			text(22, 7, "●");
+			text(25, 7, "◆");
+		}
+		colorSetRestore();
+
+		text(27, 7, "(원하는 평점을 클릭)");
+
+		text(7, 15, "리뷰");
+
+		text(3, 10, "★ = 지나가다 있으면 편하게 식사할 수 있는 가게 (접근성)");
+		text(3, 11, "● = 남에게 추천해줄만한 호불호 없는 요리의 가게 (요리)");
+		text(3, 12, "◆ = 저렴한 가격 대비 만족도가 높은 가게 (가격)");
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((19 <= x) && (x <= 52))
+		{
+			if ((6 <= y) && (y <= 8))
+			{
+				//별
+				if ((18 <= x) && (x <= 20))
+				{
+					if (mmval.rec.EventType == MOUSE_EVENT)
+					{
+						if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+						{
+							if ((repu / 100) == 0)
+							{
+								repu += 100;
+							}
+							else
+							{
+								repu -= 100;
+							}
+						}
+					}
+				}
+				//원
+				if ((21 <= x) && (x <= 23))
+				{
+					if (mmval.rec.EventType == MOUSE_EVENT)
+					{
+						if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+						{
+							if ((repu % 100) / 10 == 0)
+							{
+								repu += 10;
+							}
+							else
+							{
+								repu -= 10;
+							}
+						}
+					}
+				}
+				//마름모
+				if ((24 <= x) && (x <= 26))
+				{
+					if (mmval.rec.EventType == MOUSE_EVENT)
+					{
+						if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+						{
+							if ((repu % 10) == 0)
+
+								repu += 1;
+						}
+						else
+						{
+							repu -= 1;
+						}
+					}
+				}
+			}
+			//리뷰 입력
+			if ((14 <= y) && (y <= 21))
+			{
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						textInput2(19, 15, usersReview);
+					}
+				}
+			}
+		}
+		if ((22 <= y) && (y <= 24))
+		{
+			//리뷰수정 버튼
+			if ((9 <= x) && (x <= 24))
+			{
+				colorSetSelect();
+				text(12, 24, "리뷰수정");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						reviewResetButton(user, restList.rest.code, repu, usersReview);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(12, 24, "리뷰수정");
+			}
+			//돌아가기 버튼
+			if ((36 <= x) && (x <= 49))
+			{
+				colorSetSelect();
+				text(39, 24, "돌아가기");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						clearConsole();
+						text(39, 24, "          ");
+						favRestBrowse(user, restList);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(39, 24, "돌아가기");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			text(12, 24, "리뷰수정");
+			colorSetRestore();
+			text(39, 24, "돌아가기");
+		}
+	}
+	free(usersReview);
+}
+
+//리뷰수정버튼
+void reviewResetButton(User user, char* code, int repu, char* usersReview)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+	int size = 0;
+	int resetReview;
+
+	Review* reviewList = reviewFileRead(&size);
+
+	Review review;
+	strcpy(review.ID, user.ID);
+	strcpy(review.code, code);
+	strcpy(review.usersReview, usersReview);
+	review.repu = repu;
+
+	for (int i = 0; i < size; i++)
+	{
+		if (strcmp(reviewList[i].ID, user.ID) == 0)
+		{
+			if (strcmp(reviewList[i].code, code) == 0)
+			{
+				resetReview = i;
+			}
+		}
+	}
+
+	if (repu != 0)
+	{
+		if ((strcmp(usersReview, "\0") != 0) && (strlen(usersReview) <= 300))
+		{
+			reviewFileReWrite(review, resetReview);
+			drawBox(10, 10, 30, 10);
+			text(14, 12, "리뷰 수정이 완료되었습니다.");
+			drawBox(19, 18, 10, 1);
+			text(24, 19, "확인");
+			while (1)
+			{
+				ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+				mouseMove(&x, &y);
+				if ((19 <= x) && (x <= 29))
+				{
+					if ((17 <= y) && (y <= 19))
+					{
+						colorSetSelect();
+						text(24, 19, "확인");
+						if (mmval.rec.EventType == MOUSE_EVENT)
+						{
+							if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+							{
+								clearConsole();
+								colorSetRestore();
+								text(24, 19, "          ");
+								FavListArray favListArray = makeFavRestList(user);
+								showMainUser(user, favListArray);
+							}
+						}
+					}
+					else
+					{
+						colorSetRestore();
+						text(24, 19, "확인");
+					}
+				}
+				else
+				{
+					colorSetRestore();
+					text(24, 19, "확인");
+				}
+			}
+		}
+		else
+		{
+			text(20, 27, "                                      ");
+			text(20, 27, "유효하지 않은 리뷰입니다.");
+		}
+	}
+	else
+	{
+		text(20, 27, "                                      ");
+		text(20, 27, "평점마크를 하나라도 선택해야 합니다.");
+	}
+	free(reviewList);
+}
+
+//등록된리뷰 배열로 만들기
+ReviewArray makeReviewArray(Rest rest)
+{
+	int curRestReviewSize = 0;
+	int size = 0;
+
+	ReviewArray reviewArray;
+	Review* curRestReview;
+	Review* review = reviewFileRead(&size);
+
+	for (int i = 0; i < size; i++)
+	{
+		if (strcmp(review[i].code, rest.code) == 0)
+		{
+			curRestReviewSize++;
+		}
+	}
+
+	if (curRestReviewSize != 0)
+	{
+		curRestReview = (Review*)malloc(sizeof(Review) * curRestReviewSize);
+		curRestReviewSize = 0;
+		for (int i = 0; i < size; i++)
+		{
+			if (strcmp(review[i].code, rest.code) == 0)
+			{
+				curRestReview[curRestReviewSize] = review[i];
+				curRestReviewSize++;
+			}
+		}
+	}
+	else
+	{
+		Review emptyReview = { " "," "," ",0};
+		curRestReview = (Review*)malloc(sizeof(Review));
+		curRestReview[0] = emptyReview;
+	}
+	free(review);
+	reviewArray.review = curRestReview;
+	reviewArray.size = curRestReviewSize;
+	return reviewArray;
+}
+
+//다른리뷰보기
+void browseOthersReview(User user, RestList restList, ReviewArray reviewArray)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+	int i = 0;
+	int curRestReviewSize = 0;
+
+	Review* curRestReview;
+
+	for (int j = 0 ; j < reviewArray.size; j++)
+	{
+		if (strcmp(reviewArray.review[j].ID, user.ID) != 0)
+		{
+			curRestReviewSize++;
+		}
+	}
+
+	curRestReview = (Review*)malloc(sizeof(Review)*curRestReviewSize);
+	curRestReviewSize = 0;
+
+	for (int j = 0; j < reviewArray.size; j++)
+	{
+		if (strcmp(reviewArray.review[j].ID, user.ID) != 0)
+		{
+			curRestReview[curRestReviewSize] = reviewArray.review[j];
+			curRestReviewSize++;
+		}
+	}
+
+	//다른리뷰보기 창
+	drawBox(10, 2, 40, 3);
+	drawBox(10, 7, 40, 3);
+	drawBox(10, 12, 40, 3);
+
+	drawBox(10, 23, 11, 1);
+	text(12, 24, "리뷰정렬");
+	drawBox(38, 23, 10, 1);
+	text(40, 24, "돌아가기");
+
+	while (1)
+	{
+		colorSetRestore();
+		text(55, 9, "▲");
+		text(55, 11, "▼");
+		if (curRestReviewSize == 0)
+		{
+			colorSetRestore();
+			text(12, 4, "다른 리뷰가 없습니다");
+		}
+		else
+		{
+			text(12, 4, curRestReview[i].ID);
+			if ((curRestReview[i].repu / 100) == 1)
+			{
+				text(12, 5, "★");
+			}
+			if (((curRestReview[i].repu % 100) / 10) == 1)
+			{
+				text(14, 5, "●");
+			}
+			if ((curRestReview[i].repu % 10) == 1)
+			{
+				text(16, 5, "◆");
+			}
+			if (curRestReviewSize >= 2)
+			{
+				text(12, 9, curRestReview[i+1].ID);
+				if ((curRestReview[i + 1].repu / 100) == 1)
+				{
+					text(12, 10, "★");
+				}
+				if (((curRestReview[i + 1].repu % 100) / 10) == 1)
+				{
+					text(14, 10, "●");
+				}
+				if ((curRestReview[i + 1].repu % 10) == 1)
+				{
+					text(16, 10, "◆");
+				}
+			}
+			if (curRestReviewSize >= 3)
+			{
+				text(12, 14, curRestReview[i+2].ID);
+				if ((curRestReview[i + 2].repu / 100) == 1)
+				{
+					text(12, 15, "★");
+				}
+				if (((curRestReview[i + 2].repu % 100) / 10) == 1)
+				{
+					text(14, 15, "●");
+				}
+				if ((curRestReview[i + 2].repu % 10) == 1)
+				{
+					text(16, 15, "◆");
+				}
+			}
+		}
+		// 마우스 이동과 클릭시 처리
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((2 <= y) && (y <= 16))
+		{
+			if ((9 <= x) && (x <= 51))
+			{
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwEventFlags & MOUSE_WHEELED)
+					{
+						// 스크롤 방향 확인
+						short wheelDelta = HIWORD(mmval.rec.Event.MouseEvent.dwButtonState);
+
+						//마우스 위로 스크롤 됨
+						if (wheelDelta > 0)
+						{
+							if ((curRestReviewSize > 3) && (0 < i))
+							{
+								text(12, 4, "                ");
+								text(12, 9, "                ");
+								text(12, 14, "                ");
+								text(12, 5, "                ");
+								text(12, 10, "                ");
+								text(12, 15, "                ");
+								i--;
+							}
+						}
+						//마우스 아래로 스크롤 됨
+						else if (wheelDelta < 0)
+						{
+							if ((curRestReviewSize > 3) && (curRestReviewSize > i + 3))
+							{
+								text(12, 4, "                ");
+								text(12, 9, "                ");
+								text(12, 14, "                ");
+								text(12, 5, "                ");
+								text(12, 10, "                ");
+								text(12, 15, "                ");
+								i++;
+							}
+						}
+					}
+				}
+				if ((1 <= y) && (y <= 5))
+				{
+					if (curRestReviewSize != 0)
+					{
+						text(9, 4, ">");
+						if (mmval.rec.EventType == MOUSE_EVENT)
+						{
+							if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+							{
+								colorSetRestore();
+								clearConsole();
+								reviewBrowseWindowUser(user, restList, curRestReview[i]);
+							}
+						}
+					}
+				}
+				else
+				{
+					text(9, 4, " ");
+				}
+				if ((6 <= y) && (y <= 10))
+				{
+					if (curRestReviewSize >= 2)
+					{
+						text(9, 9, ">");
+						if (mmval.rec.EventType == MOUSE_EVENT)
+						{
+							if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+							{
+								colorSetRestore();
+								clearConsole();
+								reviewBrowseWindowUser(user, restList, curRestReview[i+1]);
+							}
+						}
+					}
+				}
+				else
+				{
+					text(9, 9, " ");
+				}
+				if ((11 <= y) && (y <= 15))
+				{
+					if (curRestReviewSize >= 3)
+					{
+						text(9, 14, ">");
+						if (mmval.rec.EventType == MOUSE_EVENT)
+						{
+							if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+							{
+								colorSetRestore();
+								clearConsole();
+								reviewBrowseWindowUser(user, restList, curRestReview[i+2]);
+							}
+						}
+					}
+				}
+				else
+				{
+					text(9, 14, " ");
+				}
+			}
+			else
+			{
+				text(9, 4, " ");
+				text(9, 9, " ");
+				text(9, 14, " ");
+			}
+		}
+		if ((22 <= y) && (y <= 24))
+		{
+			//리뷰정렬 버튼
+			if ((9 <= x) && (x <= 22))
+			{
+				colorSetSelect();
+				text(12, 24, "리뷰정렬");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						reviewSortUser(user, restList, reviewArray);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(12, 24, "리뷰정렬");
+			}
+			//돌아가기 버튼
+			if ((37 <= x) && (x <= 51))
+			{
+				colorSetSelect();
+				text(40, 24, "돌아가기");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						clearConsole();
+						text(12, 24, "         ");
+						favRestBrowse(user, restList);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(40, 24, "돌아가기");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			test(12, 24, "리뷰정렬");
+			text(40, 24, "돌아가기");
+		}
+	}
+	free(curRestReview);
+}
+
+//다른리뷰보기 창
+void reviewBrowseWindowUser(User user, RestList restList, Review review)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+
+	drawBox(10, 23, 11, 1);
+	text(12, 24, "돌아가기");
+	while (1)
+	{
+		colorSetRestore();
+		text(3, 9, "평점");
+		if ((review.repu / 100) == 1)
+		{
+			text(15, 9, "★");
+		}
+		if (((review.repu % 100) / 10) == 1)
+		{
+			text(17, 9, "●");
+		}
+		if ((review.repu % 10) == 1)
+		{
+			text(18, 9, "◆");
+		}
+
+		text(3, 11, "리뷰");
+		textOutput(15, 11, review.usersReview);
+
+		// 마우스 이동과 클릭시 처리
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((22 <= y) && (y <= 24))
+		{
+			//돌아가기 버튼
+			if ((9 <= x) && (x <= 22))
+			{
+				colorSetSelect();
+				text(12, 24, "돌아가기");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						clearConsole();
+						text(12, 24, "         ");
+						ReviewArray reviewArray = makeReviewArray(restList.rest);
+						browseOthersReview(user, restList, reviewArray);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(12, 24, "돌아가기");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			text(12, 24, "돌아가기");
+		}
+	}
+}
+
+//리뷰정렬
+void reviewSortUser(User user, RestList restList, ReviewArray reviewArray)
+{
+	int i, j;
+	Review tempReview;
+
+	//평점순
+	if (reviewArray.size == 0 || reviewArray.size == 1)
+	{
+		drawBox(18, 26, 30, 1);
+		text(20, 27, "정렬할 가게가 없습니다.");
+	}
+	else
+	{
+		for (i = 0; i < reviewArray.size; i++)
+		{
+			for (j = 0; j < reviewArray.size - i - 1; j++)
+			{
+				if (strcmp(reviewArray.review[j].repu, reviewArray.review[j + 1].repu) > 0)
+				{
+					tempReview = reviewArray.review[j];
+					reviewArray.review[j] = reviewArray.review[j + 1];
+					reviewArray.review[j + 1] = tempReview;
+				}
+			}
+		}
+		clearConsole();
+		browseOthersReview(user, restList, reviewArray);
+	}
+}
+
+//맛집삭제
+void deleteFavRest(User user, RestList restList)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+
+	drawBox(9, 10, 38, 10);
+	text(15, 12, "현재 맛집을 삭제 하시겠습니까?");
+	drawBox(18, 18, 8, 1);
+	text(21, 19, "확인");
+	drawBox(31, 18, 8, 1);
+	text(34, 19, "취소");
+	while (1)
+	{
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((17 <= y) && (y <= 19))
+		{
+			if ((17 <= x) && (x <= 27))
+			{
+				colorSetSelect();
+				text(21, 19, "확인");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						deleteFavRestFile(user, restList.review.code);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(21, 19, "확인");
+			}
+			if ((30 <= x) && (x <= 40))
+			{
+				colorSetSelect();
+				text(34, 19, "취소");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						clearConsole();
+						colorSetRestore();
+						text(34, 19, "        ");
+						favRestBrowse(user, restList);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(34, 19, "취소");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			text(21, 19, "확인");
+			text(34, 19, "취소");
+		}
+	}
+}
+
+//맛집정보 파일에서 삭제
+void deleteFavRestFile(User user, char* code)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+
+	int reviewSize;
+
+	int resignReview;
+
+	Review* reviewList = reviewFileRead(&reviewSize);
+
+	for (int i = 0; i < reviewSize; i++)
+	{
+		if (strcmp(reviewList[i].ID, user.ID) == 0)
+		{
+			if (strcmp(reviewList[i].code, code) == 0)
+			{
+				resignReview = i;
+			}
+		}
+	}
+
+	//파일에서 해당 유저 지우기
+	reviewFileDeleteLine(resignReview);
+
+	drawBox(9, 10, 38, 10);
+	text(18, 12, "맛집이 삭제되었습니다.");
+	drawBox(22, 18, 10, 1);
+	text(27, 19, "확인");
+
+	while (1)
+	{
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((22 <= x) && (x <= 32))
+		{
+			if ((17 <= y) && (y <= 19))
+			{
+				colorSetSelect();
+				text(27, 19, "확인");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						clearConsole();
+						colorSetRestore();
+						text(27, 19, "       ");
+						FavListArray favListArray = makeFavRestList(user);
+						showMainUser(user, favListArray);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(27, 19, "확인");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			text(27, 19, "확인");
+		}
+	}
+}
+
+//리뷰보기
+void browseReview(User user, Rest rest, ReviewArray reviewArray)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+	int i = 0;
+
+	//리뷰보기 창
+	drawBox(10, 2, 40, 3);
+	drawBox(10, 7, 40, 3);
+	drawBox(10, 12, 40, 3);
+
+	drawBox(10, 23, 11, 1);
+	text(12, 24, "리뷰정렬");
+	drawBox(38, 23, 10, 1);
+	text(40, 24, "돌아가기");
+
+
+	while (1)
+	{
+		colorSetRestore();
+		text(55, 9, "▲");
+		text(55, 11, "▼");
+		if (reviewArray.size == 0)
+		{
+			colorSetRestore();
+			text(12, 4, "리뷰가 없습니다");
+		}
+		else
+		{
+			text(12, 4, reviewArray.review[i].ID);
+			if ((reviewArray.review[i].repu / 100) == 1)
+			{
+				text(12, 5, "★");
+			}
+			if (((reviewArray.review[i].repu % 100) / 10) == 1)
+			{
+				text(14, 5, "●");
+			}
+			if ((reviewArray.review[i].repu % 10) == 1)
+			{
+				text(16, 5, "◆");
+			}
+			if (reviewArray.size >= 2)
+			{
+				text(12, 9, reviewArray.review[i + 1].ID);
+				if ((reviewArray.review[i + 1].repu / 100) == 1)
+				{
+					text(12, 10, "★");
+				}
+				if (((reviewArray.review[i + 1].repu % 100) / 10) == 1)
+				{
+					text(14, 10, "●");
+				}
+				if ((reviewArray.review[i + 1].repu % 10) == 1)
+				{
+					text(16, 10, "◆");
+				}
+			}
+			if (reviewArray.size >= 3)
+			{
+				text(12, 14, reviewArray.review[i + 2].ID);
+				if ((reviewArray.review[i + 2].repu / 100) == 1)
+				{
+					text(12, 15, "★");
+				}
+				if (((reviewArray.review[i + 2].repu % 100) / 10) == 1)
+				{
+					text(14, 15, "●");
+				}
+				if ((reviewArray.review[i + 2].repu % 10) == 1)
+				{
+					text(16, 15, "◆");
+				}
+			}
+		}
+		// 마우스 이동과 클릭시 처리
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((2 <= y) && (y <= 16))
+		{
+			if ((9 <= x) && (x <= 51))
+			{
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwEventFlags & MOUSE_WHEELED)
+					{
+						// 스크롤 방향 확인
+						short wheelDelta = HIWORD(mmval.rec.Event.MouseEvent.dwButtonState);
+
+						//마우스 위로 스크롤 됨
+						if (wheelDelta > 0)
+						{
+							if ((reviewArray.size > 3) && (0 < i))
+							{
+								text(12, 4, "                ");
+								text(12, 9, "                ");
+								text(12, 14, "                ");
+								text(12, 5, "                ");
+								text(12, 10, "                ");
+								text(12, 15, "                ");
+								i--;
+							}
+						}
+						//마우스 아래로 스크롤 됨
+						else if (wheelDelta < 0)
+						{
+							if ((reviewArray.size > 3) && (reviewArray.size > i + 3))
+							{
+								text(12, 4, "                ");
+								text(12, 9, "                ");
+								text(12, 14, "                ");
+								text(12, 5, "                ");
+								text(12, 10, "                ");
+								text(12, 15, "                ");
+								i++;
+							}
+						}
+					}
+				}
+				if ((1 <= y) && (y <= 5))
+				{
+					if (reviewArray.size != 0)
+					{
+						text(9, 4, ">");
+						if (mmval.rec.EventType == MOUSE_EVENT)
+						{
+							if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+							{
+								colorSetRestore();
+								clearConsole();
+								reviewBrowseWindowOwner(user, rest, reviewArray.review[i]);
+							}
+						}
+					}
+				}
+				else
+				{
+					text(9, 4, " ");
+				}
+				if ((6 <= y) && (y <= 10))
+				{
+					if (reviewArray.size >= 2)
+					{
+						text(9, 9, ">");
+						if (mmval.rec.EventType == MOUSE_EVENT)
+						{
+							if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+							{
+								colorSetRestore();
+								clearConsole();
+								reviewBrowseWindowOwner(user, rest, reviewArray.review[i + 1]);
+							}
+						}
+					}
+				}
+				else
+				{
+					text(9, 9, " ");
+				}
+				if ((11 <= y) && (y <= 15))
+				{
+					if (reviewArray.size >= 3)
+					{
+						text(9, 14, ">");
+						if (mmval.rec.EventType == MOUSE_EVENT)
+						{
+							if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+							{
+								colorSetRestore();
+								clearConsole();
+								reviewBrowseWindowOwner(user, rest, reviewArray.review[i + 2]);
+							}
+						}
+					}
+				}
+				else
+				{
+					text(9, 14, " ");
+				}
+			}
+			else
+			{
+				text(9, 4, " ");
+				text(9, 9, " ");
+				text(9, 14, " ");
+			}
+		}
+		if ((22 <= y) && (y <= 24))
+		{
+			//리뷰정렬 버튼
+			if ((9 <= x) && (x <= 22))
+			{
+				colorSetSelect();
+				text(12, 24, "리뷰정렬");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						reviewSortOwner(user, rest, reviewArray);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(12, 24, "리뷰정렬");
+			}
+			//돌아가기 버튼
+			if ((37 <= x) && (x <= 51))
+			{
+				colorSetSelect();
+				text(40, 24, "돌아가기");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						clearConsole();
+						text(12, 24, "         ");
+						ownersRestBrowse(user, rest);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(40, 24, "돌아가기");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			test(12, 24, "리뷰정렬");
+			text(40, 24, "돌아가기");
+		}
+	}
+}
+
+//리뷰보기 창
+void reviewBrowseWindowOwner(User user, Rest rest, Review review)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+
+	drawBox(10, 23, 11, 1);
+	text(12, 24, "돌아가기");
+	while (1)
+	{
+		colorSetRestore();
+		text(3, 9, "평점");
+		if ((review.repu / 100) == 1)
+		{
+			text(15, 9, "★");
+		}
+		if (((review.repu % 100) / 10) == 1)
+		{
+			text(17, 9, "●");
+		}
+		if ((review.repu % 10) == 1)
+		{
+			text(18, 9, "◆");
+		}
+
+		text(3, 11, "리뷰");
+		textOutput(15, 11, review.usersReview);
+
+		// 마우스 이동과 클릭시 처리
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((22 <= y) && (y <= 24))
+		{
+			//돌아가기 버튼
+			if ((9 <= x) && (x <= 22))
+			{
+				colorSetSelect();
+				text(12, 24, "돌아가기");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						clearConsole();
+						text(12, 24, "         ");
+						ReviewArray reviewArray = makeReviewArray(rest);
+						browseReview(user, rest, reviewArray);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(12, 24, "돌아가기");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			text(12, 24, "돌아가기");
+		}
+	}
+}
+
+//리뷰정렬(주인)
+void reviewSortOwner(User user, Rest rest, ReviewArray reviewArray)
+{
+	int i, j;
+	Review tempReview;
+
+	//평점순
+	if (reviewArray.size == 0 || reviewArray.size == 1)
+	{
+		drawBox(18, 26, 30, 1);
+		text(20, 27, "정렬할 가게가 없습니다.");
+	}
+	else
+	{
+		for (i = 0; i < reviewArray.size; i++)
+		{
+			for (j = 0; j < reviewArray.size - i - 1; j++)
+			{
+				if (strcmp(reviewArray.review[j].repu, reviewArray.review[j + 1].repu) > 0)
+				{
+					tempReview = reviewArray.review[j];
+					reviewArray.review[j] = reviewArray.review[j + 1];
+					reviewArray.review[j + 1] = tempReview;
+				}
+			}
+		}
+		clearConsole();
+		browseReview(user, rest, reviewArray);
+	}
+}
+
+//가게정보수정
+void restReset(User user, Rest rest)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+
+	char restName[40] = "\0";
+	char loc[60] = "\0";
+	char bHours[60] = "\0";
+	strcpy(restName, rest.restName);
+	strcpy(loc, rest.loc);
+	strcpy(bHours, rest.bHours);
+
+	// 가게정보수정 창
+	drawBox(17, 7, 25, 1);
+	drawBox(17, 10, 25, 1);
+	drawBox(17, 13, 25, 1);
+
+
+	drawBox(10, 23, 11, 1);
+	text(14, 24, "수정");
+	drawBox(37, 23, 11, 1);
+	text(39, 24, "돌아가기");
+
+	text(19, 8, restName);
+	text(19, 11, loc);
+	text(19, 14, bHours);
+
+	while (1)
+	{
+		colorSetRestore();
+		text(7, 8, "가게이름");
+		text(7, 11, "가게위치");
+		text(7, 14, "영업시간");
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((19 <= x) && (x <= 42))
+		{
+			//가게이름 입력
+			if ((7 <= y) && (y <= 9))
+			{
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						textInput(19, 8, restName, FALSE);
+					}
+				}
+			}
+			//가게위치 입력
+			if ((10 <= y) && (y <= 12))
+			{
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						textInput(19, 11, loc, FALSE);
+					}
+				}
+			}
+			//영업시간 입력
+			if ((13 <= y) && (y <= 15))
+			{
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						textInput(19, 14, bHours, FALSE);
+					}
+				}
+			}
+		}
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((22 <= y) && (y <= 24))
+		{
+			//수정 버튼
+			if ((9 <= x) && (x <= 24))
+			{
+				colorSetSelect();
+				text(12, 24, "수정");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						restResetButton(user, rest.code, restName, loc, bHours);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(12, 24, "리뷰수정");
+			}
+			//돌아가기 버튼
+			if ((36 <= x) && (x <= 49))
+			{
+				colorSetSelect();
+				text(39, 24, "돌아가기");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						clearConsole();
+						text(39, 24, "          ");
+						ownersRestBrowse(user, rest);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(39, 24, "돌아가기");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			text(12, 24, "리뷰수정");
+			colorSetRestore();
+			text(39, 24, "돌아가기");
+		}
+	}
+}
+
+//가게정보수정버튼
+void restResetButton(User user, char* code, char* restName, char* loc, char* bHours)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+	int size = 0;
+	int resetRest;
+
+	Rest* restList = restInfoFileRead(&size);
+
+	Rest rest;
+	strcpy(rest.ID, user.ID);
+	strcpy(rest.code, code);
+	strcpy(rest.restName, restName);
+	strcpy(rest.loc, loc);
+	strcpy(rest.bHours, bHours);
+
+	for (int i = 0; i < size; i++)
+	{
+		if (strcmp(restList[i].code, code) == 0)
+		{
+			resetRest = i;
+		}
+	}
+
+	if ((strcmp(restName, "\0") != 0) && (strlen(restName) <= 40))
+	{
+		if ((strcmp(loc, "\0") != 0) && (strlen(loc) <= 60))
+		{
+			if (strcmp(bHours, "\0") != 0 && (strlen(bHours) <= 60))
+			{
+				restInfoFileReWrite(rest, resetRest);
+				drawBox(10, 10, 30, 10);
+				text(14, 12, "가게정보수정이 완료되었습니다.");
+				drawBox(19, 18, 10, 1);
+				text(24, 19, "확인");
+				while (1)
+				{
+					ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+					mouseMove(&x, &y);
+					if ((19 <= x) && (x <= 29))
+					{
+						if ((17 <= y) && (y <= 19))
+						{
+							colorSetSelect();
+							text(24, 19, "확인");
+							if (mmval.rec.EventType == MOUSE_EVENT)
+							{
+								if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+								{
+									clearConsole();
+									colorSetRestore();
+									text(24, 19, "          ");
+									RestListArray restListArray = makeOwnersRestList(user);
+									showMainOwner(user, restListArray);
+								}
+							}
+						}
+						else
+						{
+							colorSetRestore();
+							text(24, 19, "확인");
+						}
+					}
+					else
+					{
+						colorSetRestore();
+						text(24, 19, "확인");
+					}
+				}
+			}
+			else
+			{
+				text(20, 27, "                                      ");
+				text(20, 27, "유효하지 않은 영업시간 입니다.");
+			}
+		}
+		else
+		{
+			text(20, 27, "                                      ");
+			text(20, 27, "유효하지 않은 가게위치 입니다.");
+		}
+	}
+	else
+	{
+		text(20, 27, "                                      ");
+		text(20, 27, "유효하지 않은 가게이름 입니다.");
+	}
+	free(restList);
+}
+
+//가게삭제
+void deleteRest(User user, Rest rest)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+
+	drawBox(9, 10, 38, 10);
+	text(15, 12, "현재 가게를 삭제 하시겠습니까?");
+	drawBox(18, 18, 8, 1);
+	text(21, 19, "확인");
+	drawBox(31, 18, 8, 1);
+	text(34, 19, "취소");
+	while (1)
+	{
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((17 <= y) && (y <= 19))
+		{
+			if ((17 <= x) && (x <= 27))
+			{
+				colorSetSelect();
+				text(21, 19, "확인");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						deleteRestFile(user, rest);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(21, 19, "확인");
+			}
+			if ((30 <= x) && (x <= 40))
+			{
+				colorSetSelect();
+				text(34, 19, "취소");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						clearConsole();
+						colorSetRestore();
+						text(34, 19, "        ");
+						ownersRestBrowse(user, rest);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(34, 19, "취소");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			text(21, 19, "확인");
+			text(34, 19, "취소");
+		}
+	}
+}
+
+//가게삭제버튼
+void deleteRestFile(User user, Rest rest)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+
+	int restSize;
+	int reviewSize;
+
+	int resignRest;
+
+	int tempSize = 0;
+
+	Rest* restList = restInfoFileRead(&restSize);
+
+	for (int i = 0; i < restSize; i++)
+	{
+		if (strcmp(restList[i].code, rest.code) == 0)
+		{
+			resignRest = i;
+		}
+	}
+
+	//해당 가게로 등록된 맛집 배열에 넣기
+	Review* reviewList = reviewFileRead(&reviewSize);
+
+	for (int i = 0; i < reviewSize; i++)
+	{
+		if (strcmp(reviewList[i].code, rest.code) == 0)
+		{
+			tempSize++;
+		}
+	}
+
+	int* tempList = (int*)malloc(sizeof(int) * tempSize);
+	tempSize = 0;
+
+	for (int i = 0; i < reviewSize; i++)
+	{
+		if (strcmp(reviewList[i].code, rest.code) == 0)
+		{
+			tempList[tempSize] = i;
+			tempSize++;
+		}
+	}
+
+	//파일에서 해당 가게 지우기
+	restInfoFileDeleteLine(resignRest);
+
+	//파일에서 리뷰 지우기
+	for (int i = 0; i < tempSize; i++)
+	{
+		reviewFileDeleteLine(tempList[i]);
+	}
+
+	drawBox(9, 10, 38, 10);
+	text(18, 12, "가게가 삭제되었습니다.");
+	drawBox(22, 18, 10, 1);
+	text(27, 19, "확인");
+
+	while (1)
+	{
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((22 <= x) && (x <= 32))
+		{
+			if ((17 <= y) && (y <= 19))
+			{
+				colorSetSelect();
+				text(27, 19, "확인");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						clearConsole();
+						colorSetRestore();
+						text(27, 19, "       ");
+						RestListArray restListArray = makeOwnersRestList(user);
+						showMainOwner(user, restListArray);
 					}
 				}
 			}

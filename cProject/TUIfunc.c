@@ -259,3 +259,24 @@ void clearConsole()
 	DWORD dw;
 	FillConsoleOutputCharacter(GetStdHandle(STD_OUTPUT_HANDLE), ' ', 80 * 25, Coor, &dw);
 }
+
+//해당 좌표에 문자열 출력(리뷰)
+void textOutput(int x, int y, char* text)
+{
+	char* temp = (char*)calloc(300, sizeof(char));
+	int num = 0;
+	int resY = y;
+	int koreanCheck = 0;
+	gotoxy(x, y);
+	strcat(temp, text);
+	while (temp[num] != '\0')
+	{
+		if ((num != 0) && ((num % 28) == 0))
+		{
+			resY++;
+			gotoxy(x, resY);
+		}
+		putchar(temp[num]);
+		num++;
+	}
+}

@@ -14,3 +14,4 @@ void textInput2(int x, int y, char* text);
 void newCode(char* code, char* ID, int num);
 void drawBox(int x, int y, int width, int height);
 void clearConsole();
+void textOutput(int x, int y, char* text);
