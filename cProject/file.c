@@ -37,8 +37,8 @@ typedef struct review
 {
 	char ID[20];
 	char code[28];
-	char usersReview[304];
 	int repu;
+	char usersReview[304];
 }Review;
 
 //유저정보 파일 수정
@@ -358,16 +358,15 @@ void reviewFileReWrite(Review review, int seek)
 	Review temp;
 	int currentLine = 0;
 
-	while (!feof(inputFile))
+	while (fscanf(inputFile, "%s %s %d %[^\n]", temp.ID, temp.code, &temp.repu, temp.usersReview) == 4)
 	{
-		fscanf(inputFile, "%s %s %s %d\n", temp.ID, temp.code, temp.usersReview, &temp.repu);
 		if (currentLine != seek)
 		{
-			fprintf(tempFile, "%s %s %s %d\n", temp.ID, temp.code, temp.usersReview, temp.repu);
+			fprintf(tempFile, "%s %s %d %s\n", temp.ID, temp.code, temp.repu, temp.usersReview);
 		}
 		else
 		{
-			fprintf(tempFile, "%s %s %s %d\n", review.ID, review.code, review.usersReview, review.repu);
+			fprintf(tempFile, "%s %s %d %s\n", review.ID, review.code, review.repu, review.usersReview);
 		}
 		currentLine++;
 	}
@@ -378,10 +377,9 @@ void reviewFileReWrite(Review review, int seek)
 	inputFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\review.txt", "w");
 	tempFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\temp.txt", "r");
 
-	while (!feof(tempFile))
+	while (fscanf(tempFile, "%s %s %d %[^\n]", temp.ID, temp.code, &temp.repu, temp.usersReview) == 4)
 	{
-		fscanf(tempFile, "%s %s %s %d\n", temp.ID, temp.code, temp.usersReview, &temp.repu);
-		fprintf(inputFile, "%s %s %s %d\n", temp.ID, temp.code, temp.usersReview, temp.repu);
+		fprintf(inputFile, "%s %s %d %s\n", temp.ID, temp.code, temp.repu, temp.usersReview);
 	}
 
 	fclose(inputFile);
@@ -401,7 +399,7 @@ void reviewFileWrite(Review review)
 	}
 	else
 	{
-		fprintf(fp, "%s %s %s %d\n", review.ID, review.code, review.usersReview, review.repu);
+		fprintf(fp, "%s %s %d %s\n", review.ID, review.code, review.repu, review.usersReview);
 	}
 	fclose(fp);
 }
@@ -424,7 +422,7 @@ Review* reviewFileRead(int* _size)
 	{
 		while (!feof(fp))
 		{
-			fscanf(fp, "%s %s %s %d\n", temp.ID, temp.code, temp.usersReview, &temp.repu);
+			fscanf(fp, "%s %s %d %[^\n]", temp.ID, temp.code, &temp.repu, temp.usersReview);
 			size++;
 		}
 		temps = (Review*)malloc(sizeof(Review) * size);
@@ -432,7 +430,7 @@ Review* reviewFileRead(int* _size)
 		fp = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\review.txt", "r");
 		while (!feof(fp))
 		{
-			fscanf(fp, "%s %s %s %d\n", temps[size].ID, temps[size].code, temps[size].usersReview, &temps[size].repu);
+			fscanf(fp, "%s %s %d %[^\n]", temps[size].ID, temps[size].code, &temps[size].repu, temps[size].usersReview);
 			size++;
 		}
 	}
@@ -454,12 +452,11 @@ void reviewFileDeleteLine(int seek) {
 	Review temp;
 	int currentLine = 0;
 
-	while (!feof(inputFile))
+	while (fscanf(inputFile, "%s %s %d %[^\n]", temp.ID, temp.code, &temp.repu, temp.usersReview) == 4)
 	{
-		fscanf(inputFile, "%s %s %s %d\n", temp.ID, temp.code, temp.usersReview, &temp.repu);
 		if (currentLine != seek)
 		{
-			fprintf(tempFile, "%s %s %s %d\n", temp.ID, temp.code, temp.usersReview, temp.repu);
+			fprintf(tempFile, "%s %s %d %s\n", temp.ID, temp.code, temp.repu, temp.usersReview);
 		}
 		currentLine++;
 	}
@@ -470,10 +467,9 @@ void reviewFileDeleteLine(int seek) {
 	inputFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\review.txt", "w");
 	tempFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\temp.txt", "r");
 
-	while (!feof(tempFile))
+	while (fscanf(tempFile, "%s %s %d %[^\n]", temp.ID, temp.code, &temp.repu, temp.usersReview) == 4)
 	{
-		fscanf(tempFile, "%s %s %s %d\n", temp.ID, temp.code, temp.usersReview, &temp.repu);
-		fprintf(inputFile, "%s %s %s %d\n", temp.ID, temp.code, temp.usersReview, temp.repu);
+		fprintf(inputFile, "%s %s %d %s\n", temp.ID, temp.code, temp.repu, temp.usersReview);
 	}
 
 	fclose(inputFile);

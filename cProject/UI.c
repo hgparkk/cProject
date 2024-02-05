@@ -1437,6 +1437,7 @@ void showMainOwner(User user, RestListArray restListArray)
 
 	while (1)
 	{
+		colorSetRestore();
 		text(55, 9, "▲");
 		text(55, 11, "▼");
 		if (restListArray.size == 0)
@@ -3350,6 +3351,10 @@ void ownersRestBrowse(User user, Rest rest)
 				{
 					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
 					{
+						clearConsole();
+						colorSetRestore();
+						text(25, 24, "             ");
+						restReset(user, rest);
 					}
 				}
 			}
@@ -3367,6 +3372,8 @@ void ownersRestBrowse(User user, Rest rest)
 				{
 					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
 					{
+						colorSetRestore();
+						deleteRest(user, rest);
 					}
 				}
 			}
@@ -3432,11 +3439,6 @@ void reviewReset(User user, RestList restList)
 	strcpy(usersReview, restList.review.usersReview);
 
 	// 리뷰수정 창
-
-	text(19, 7, "★");
-	text(22, 7, "●");
-	text(25, 7, "◆");
-
 	drawBox(17, 14, 30, 7);
 
 	drawBox(10, 23, 11, 1);
@@ -3574,12 +3576,13 @@ void reviewReset(User user, RestList restList)
 						if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
 						{
 							if ((repu % 10) == 0)
-
+							{ 
 								repu += 1;
-						}
-						else
-						{
-							repu -= 1;
+							}
+							else
+							{
+								repu -= 1;
+							}
 						}
 					}
 				}
@@ -4044,7 +4047,7 @@ void browseOthersReview(User user, RestList restList, ReviewArray reviewArray)
 		else
 		{
 			colorSetRestore();
-			test(12, 24, "리뷰정렬");
+			text(12, 24, "리뷰정렬");
 			text(40, 24, "돌아가기");
 		}
 	}
@@ -4120,7 +4123,7 @@ void reviewBrowseWindowUser(User user, RestList restList, Review review)
 	}
 }
 
-//리뷰정렬
+//리뷰정렬(고객)
 void reviewSortUser(User user, RestList restList, ReviewArray reviewArray)
 {
 	int i, j;
@@ -4129,8 +4132,8 @@ void reviewSortUser(User user, RestList restList, ReviewArray reviewArray)
 	//평점순
 	if (reviewArray.size == 0 || reviewArray.size == 1)
 	{
-		drawBox(18, 26, 30, 1);
-		text(20, 27, "정렬할 가게가 없습니다.");
+		clearConsole();
+		browseOthersReview(user, restList, reviewArray);
 	}
 	else
 	{
@@ -4138,7 +4141,7 @@ void reviewSortUser(User user, RestList restList, ReviewArray reviewArray)
 		{
 			for (j = 0; j < reviewArray.size - i - 1; j++)
 			{
-				if (strcmp(reviewArray.review[j].repu, reviewArray.review[j + 1].repu) > 0)
+				if (reviewArray.review[j].repu < reviewArray.review[j+1].repu)
 				{
 					tempReview = reviewArray.review[j];
 					reviewArray.review[j] = reviewArray.review[j + 1];
@@ -4533,7 +4536,7 @@ void browseReview(User user, Rest rest, ReviewArray reviewArray)
 		else
 		{
 			colorSetRestore();
-			test(12, 24, "리뷰정렬");
+			text(12, 24, "리뷰정렬");
 			text(40, 24, "돌아가기");
 		}
 	}
@@ -4617,8 +4620,8 @@ void reviewSortOwner(User user, Rest rest, ReviewArray reviewArray)
 	//평점순
 	if (reviewArray.size == 0 || reviewArray.size == 1)
 	{
-		drawBox(18, 26, 30, 1);
-		text(20, 27, "정렬할 가게가 없습니다.");
+		clearConsole();
+		browseReview(user, rest, reviewArray);
 	}
 	else
 	{
@@ -4626,7 +4629,7 @@ void reviewSortOwner(User user, Rest rest, ReviewArray reviewArray)
 		{
 			for (j = 0; j < reviewArray.size - i - 1; j++)
 			{
-				if (strcmp(reviewArray.review[j].repu, reviewArray.review[j + 1].repu) > 0)
+				if (reviewArray.review[j].repu < reviewArray.review[j + 1].repu)
 				{
 					tempReview = reviewArray.review[j];
 					reviewArray.review[j] = reviewArray.review[j + 1];
@@ -4724,7 +4727,7 @@ void restReset(User user, Rest rest)
 			if ((9 <= x) && (x <= 24))
 			{
 				colorSetSelect();
-				text(12, 24, "수정");
+				text(14, 24, "수정");
 				if (mmval.rec.EventType == MOUSE_EVENT)
 				{
 					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
@@ -4737,7 +4740,7 @@ void restReset(User user, Rest rest)
 			else
 			{
 				colorSetRestore();
-				text(12, 24, "리뷰수정");
+				text(14, 24, "수정");
 			}
 			//돌아가기 버튼
 			if ((36 <= x) && (x <= 49))
@@ -4764,7 +4767,7 @@ void restReset(User user, Rest rest)
 		else
 		{
 			colorSetRestore();
-			text(12, 24, "리뷰수정");
+			text(14, 24, "수정");
 			colorSetRestore();
 			text(39, 24, "돌아가기");
 		}
@@ -4954,55 +4957,71 @@ void deleteRestFile(User user, Rest rest)
 
 	int resignRest;
 
+	int restCount = 0;
 	int tempSize = 0;
 
 	Rest* restList = restInfoFileRead(&restSize);
 
 	for (int i = 0; i < restSize; i++)
 	{
-		if (strcmp(restList[i].code, rest.code) == 0)
-		{
-			resignRest = i;
-		}
+		restCount++;
 	}
 
-	//해당 가게로 등록된 맛집 배열에 넣기
-	Review* reviewList = reviewFileRead(&reviewSize);
-
-	for (int i = 0; i < reviewSize; i++)
+	if (restCount > 1)
 	{
-		if (strcmp(reviewList[i].code, rest.code) == 0)
+		for (int i = 0; i < restSize; i++)
 		{
-			tempSize++;
+			if (strcmp(restList[i].code, rest.code) == 0)
+			{
+				resignRest = i;
+			}
 		}
-	}
 
-	int* tempList = (int*)malloc(sizeof(int) * tempSize);
-	tempSize = 0;
+		//해당 가게로 등록된 맛집 배열에 넣기
+		Review* reviewList = reviewFileRead(&reviewSize);
 
-	for (int i = 0; i < reviewSize; i++)
-	{
-		if (strcmp(reviewList[i].code, rest.code) == 0)
+		for (int i = 0; i < reviewSize; i++)
 		{
-			tempList[tempSize] = i;
-			tempSize++;
+			if (strcmp(reviewList[i].code, rest.code) == 0)
+			{
+				tempSize++;
+			}
 		}
+
+		int* tempList = (int*)malloc(sizeof(int) * tempSize);
+		tempSize = 0;
+
+		for (int i = 0; i < reviewSize; i++)
+		{
+			if (strcmp(reviewList[i].code, rest.code) == 0)
+			{
+				tempList[tempSize] = i;
+				tempSize++;
+			}
+		}
+
+		//파일에서 해당 가게 지우기
+		restInfoFileDeleteLine(resignRest);
+
+		//파일에서 리뷰 지우기
+		for (int i = 0; i < tempSize; i++)
+		{
+			reviewFileDeleteLine(tempList[i]);
+		}
+
+		drawBox(9, 10, 38, 10);
+		text(18, 12, "가게가 삭제되었습니다.");
+		drawBox(22, 18, 10, 1);
+		text(27, 19, "확인");
 	}
-
-	//파일에서 해당 가게 지우기
-	restInfoFileDeleteLine(resignRest);
-
-	//파일에서 리뷰 지우기
-	for (int i = 0; i < tempSize; i++)
+	else
 	{
-		reviewFileDeleteLine(tempList[i]);
+		drawBox(9, 10, 38, 10);
+		text(14, 12, "가게주인은 최소 하나의 가게가");
+		text(14, 13, "등록되어 있어야 합니다.");
+		drawBox(22, 18, 10, 1);
+		text(27, 19, "확인");
 	}
-
-	drawBox(9, 10, 38, 10);
-	text(18, 12, "가게가 삭제되었습니다.");
-	drawBox(22, 18, 10, 1);
-	text(27, 19, "확인");
-
 	while (1)
 	{
 		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);

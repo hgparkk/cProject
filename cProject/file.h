@@ -33,8 +33,8 @@ typedef struct review
 {
 	char ID[20];
 	char code[28];
-	char usersReview[304];
 	int repu;
+	char usersReview[304];
 }Review;
 
 typedef struct restList

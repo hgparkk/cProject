@@ -1,2 +1,3 @@
-phg2559 testowner-1-tpcgbrvoevkdw 임시리뷰를수정합니다. 178
-phg2559 testowner-2-azksqddauhljp 임시리뷰입니다 100
+phg2559 testowner-1-tpcgbrvoevkdw 100 임시가게1에 대한 리뷰입니다
+phg2559 testowner-2-azksqddauhljp 110 임시가게2에 대한 리뷰입니다.
+testcustomer testowner-1-tpcgbrvoevkdw 11 임시가게1에 대한 리뷰입니다.
