@@ -77,8 +77,10 @@ void restInfoFileReWrite(Rest rest, int seek);
 Rest* restInfoFileRead(int* _size);
 void restInfoFileDeleteLine(int seek);
 
+void menuFileReWrite(Menu menu, int seek);
 void menuFileWrite(Menu menu);
 Menu* menuFileRead(int* _size);
+void menuFileDeleteLine(int seek);
 
 void reviewFileWrite(Review review);
 void reviewFileReWrite(Review review, int seek);

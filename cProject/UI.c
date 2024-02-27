@@ -49,6 +49,12 @@ void restReset(User user, Rest rest);
 void restResetButton(User user, char* code, char* restName, char* loc, char* bHours);
 void deleteRest(User user, Rest rest);
 void deleteRestFile(User user, Rest rest);
+void aboutMenu(User user, Rest rest);
+void newMenu(User user, Rest rest);
+void newMenuCheck(User user, Rest rest, char* menuName, int price);
+void menuRemoveSelect(User user, Rest rest);
+void menuRemove(User user, Rest rest, Menu menu);
+void menuRemoveButton(User user, Rest rest, Menu menu);
 
 // 로그인창 화면
 void title()
@@ -3139,6 +3145,34 @@ void favRestBrowse(User user, RestList restList)
 
 	int x, y;
 
+	int menuSize = 0;
+	int tempMenuSize = 0;
+
+	int j = 0;
+
+	Menu* tempMenu;
+	Menu* menu = menuFileRead(&menuSize);
+
+	for (int i = 0; i < menuSize; i++)
+	{
+		if (strcmp(menu[i].code, restList.rest.code) == 0)
+		{
+			tempMenuSize++;
+		}
+	}
+
+	tempMenu = (Menu*)malloc(sizeof(Menu) * tempMenuSize);
+	tempMenuSize = 0;
+
+	for (int i = 0; i < menuSize; i++)
+	{
+		if (strcmp(menu[i].code, restList.rest.code) == 0)
+		{
+			tempMenu[tempMenuSize] = menu[i];
+			tempMenuSize++;
+		}
+	}
+
 	drawBox(10, 23, 11, 1);
 	text(12, 24, "리뷰수정");
 	drawBox(23, 23, 13, 1);
@@ -3159,26 +3193,91 @@ void favRestBrowse(User user, RestList restList)
 		text(3, 7, "영업시간");
 		text(15, 7, restList.rest.bHours);
 
-		text(3, 9, "평점");
+		text(3, 9, "메뉴");
+
+		if (tempMenuSize == 0)
+		{
+			text(15, 9, "등록된 메뉴가 없습니다");
+		}
+		else
+		{
+			text(15, 9, menu[j].menuName);
+			gotoxy(30, 9);
+			printf("%d", menu[j].price);
+			if (tempMenuSize >= 2)
+			{
+				text(15, 11, menu[j + 1].menuName);
+				gotoxy(30, 11);
+				printf("%d", menu[j + 1].price);
+			}
+			if (tempMenuSize >= 3)
+			{
+				text(15, 13, menu[j + 2].menuName);
+				gotoxy(30, 13);
+				printf("%d", menu[j + 2].price);
+			}
+		}
+
+		text(55, 10, "▲");
+		text(55, 12, "▼");
+
+		text(3, 15, "평점");
 		if ((restList.review.repu / 100) == 1)
 		{
-			text(15, 9, "★");
+			text(15, 15, "★");
 		}
 		if (((restList.review.repu % 100) / 10) == 1)
 		{
-			text(17, 9, "●");
+			text(17, 15, "●");
 		}
 		if ((restList.review.repu % 10) == 1)
 		{
-			text(18, 9, "◆");
+			text(18, 15, "◆");
 		}
 
-		text(3, 11, "리뷰");
-		textOutput(15, 11, restList.review.usersReview);
+		text(3, 17, "리뷰");
+		textOutput(15, 17, restList.review.usersReview);
 
 		// 마우스 이동과 클릭시 처리
 		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
 		mouseMove(&x, &y);
+		if ((8 <= y) && (y <= 20))
+		{
+			if ((9 <= x) && (x <= 51))
+			{
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwEventFlags & MOUSE_WHEELED)
+					{
+						// 스크롤 방향 확인
+						short wheelDelta = HIWORD(mmval.rec.Event.MouseEvent.dwButtonState);
+
+						//마우스 위로 스크롤 됨
+						if (wheelDelta > 0)
+						{
+							if ((tempMenuSize > 3) && (0 < j))
+							{
+								text(15, 9, "                                            ");
+								text(15, 11, "                                            ");
+								text(15, 13, "                                            ");
+								j--;
+							}
+						}
+						//마우스 아래로 스크롤 됨
+						else if (wheelDelta < 0)
+						{
+							if ((tempMenuSize > 3) && (tempMenuSize > j + 3))
+							{
+								text(15, 9, "                                            ");
+								text(15, 11, "                                            ");
+								text(15, 13, "                                            ");
+								j++;
+							}
+						}
+					}
+				}
+			}
+		}
 		if ((22 <= y) && (y <= 24))
 		{
 			//리뷰수정 버튼
@@ -3215,7 +3314,7 @@ void favRestBrowse(User user, RestList restList)
 						clearConsole();
 						text(25, 24, "             ");
 						ReviewArray reviewArray = makeReviewArray(restList.rest);
-						browseOthersReview(user, restList , reviewArray);
+						browseOthersReview(user, restList, reviewArray);
 					}
 				}
 			}
@@ -3295,14 +3394,44 @@ void ownersRestBrowse(User user, Rest rest)
 
 	int x, y;
 
+	int menuSize = 0;
+	int tempMenuSize = 0;
+
+	int j = 0;
+
+	Menu* tempMenu;
+	Menu* menu = menuFileRead(&menuSize);
+
+	for (int i = 0; i < menuSize; i++)
+	{
+		if (strcmp(menu[i].code, rest.code) == 0)
+		{
+			tempMenuSize++;
+		}
+	}
+
+	tempMenu = (Menu*)malloc(sizeof(Menu) * tempMenuSize);
+	tempMenuSize = 0;
+
+	for (int i = 0; i < menuSize; i++)
+	{
+		if (strcmp(menu[i].code, rest.code) == 0)
+		{
+			tempMenu[tempMenuSize] = menu[i];
+			tempMenuSize++;
+		}
+	}
+
 	drawBox(10, 23, 11, 1);
-	text(12, 24, "리뷰보기");
+	text(13, 24, "리뷰보기");
 	drawBox(23, 23, 13, 1);
 	text(25, 24, "가게정보수정");
 	drawBox(38, 23, 10, 1);
 	text(40, 24, "가게삭제");
 	drawBox(10, 26, 11, 1);
-	text(13, 27, "돌아가기");
+	text(13, 27, "메뉴관리");
+	drawBox(23, 26, 13, 1);
+	text(27, 27, "돌아가기");
 	while (1)
 	{
 		colorSetRestore();
@@ -3315,16 +3444,105 @@ void ownersRestBrowse(User user, Rest rest)
 		text(3, 7, "영업시간");
 		text(15, 7, rest.bHours);
 
+		text(3, 9, "메뉴");
+
+		if (tempMenuSize == 0)
+		{
+			text(15, 9, "등록된 메뉴가 없습니다");
+		}
+		else
+		{
+			text(15, 9, menu[j].menuName);
+			gotoxy(30, 9);
+			printf("%d", menu[j].price);
+			if (tempMenuSize >= 2)
+			{
+				text(15, 11, menu[j + 1].menuName);
+				gotoxy(30, 11);
+				printf("%d", menu[j + 1].price);
+			}
+			if (tempMenuSize >= 3)
+			{
+				text(15, 13, menu[j + 2].menuName);
+				gotoxy(30, 13);
+				printf("%d", menu[j + 2].price);
+			}
+			if (tempMenuSize >= 4)
+			{
+				text(15, 15, menu[j + 3].menuName);
+				gotoxy(30, 15);
+				printf("%d", menu[j + 3].price);
+			}
+			if (tempMenuSize >= 5)
+			{
+				text(15, 17, menu[j + 4].menuName);
+				gotoxy(30, 17);
+				printf("%d", menu[j + 4].price);
+			}
+			if (tempMenuSize >= 6)
+			{
+				text(15, 19, menu[j + 5].menuName);
+				gotoxy(30, 19);
+				printf("%d", menu[j + 5].price);
+			}
+		}
+
+		text(55, 14, "▲");
+		text(55, 16, "▼");
+
 		// 마우스 이동과 클릭시 처리
 		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
 		mouseMove(&x, &y);
+		if ((8 <= y) && (y <= 20))
+		{
+			if ((9 <= x) && (x <= 51))
+			{
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwEventFlags & MOUSE_WHEELED)
+					{
+						// 스크롤 방향 확인
+						short wheelDelta = HIWORD(mmval.rec.Event.MouseEvent.dwButtonState);
+
+						//마우스 위로 스크롤 됨
+						if (wheelDelta > 0)
+						{
+							if ((tempMenuSize > 6) && (0 < j))
+							{
+								text(15, 9, "                                            ");
+								text(15, 11, "                                            ");
+								text(15, 13, "                                            ");
+								text(15, 15, "                                            ");
+								text(15, 17, "                                            ");
+								text(15, 19, "                                            ");
+								j--;
+							}
+						}
+						//마우스 아래로 스크롤 됨
+						else if (wheelDelta < 0)
+						{
+							if ((tempMenuSize > 6) && (tempMenuSize > j + 6))
+							{
+								text(15, 9, "                                            ");
+								text(15, 11, "                                            ");
+								text(15, 13, "                                            ");
+								text(15, 15, "                                            ");
+								text(15, 17, "                                            ");
+								text(15, 19, "                                            ");
+								j++;
+							}
+						}
+					}
+				}
+			}
+		}
 		if ((22 <= y) && (y <= 24))
 		{
 			//리뷰보기 버튼
 			if ((9 <= x) && (x <= 22))
 			{
 				colorSetSelect();
-				text(12, 24, "리뷰보기");
+				text(13, 24, "리뷰보기");
 				if (mmval.rec.EventType == MOUSE_EVENT)
 				{
 					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
@@ -3340,7 +3558,7 @@ void ownersRestBrowse(User user, Rest rest)
 			else
 			{
 				colorSetRestore();
-				text(12, 24, "리뷰보기");
+				text(13, 24, "리뷰보기");
 			}
 			//회원정보수정 버튼
 			if ((23 <= x) && (x <= 36))
@@ -3386,17 +3604,17 @@ void ownersRestBrowse(User user, Rest rest)
 		else
 		{
 			colorSetRestore();
-			text(12, 24, "리뷰보기");
+			text(13, 24, "리뷰보기");
 			text(25, 24, "가게정보수정");
 			text(40, 24, "가게삭제");
 		}
-		//돌아가기 버튼
+		//메뉴관리 버튼
 		if ((25 <= y) && (y <= 27))
 		{
 			if ((9 <= x) && (x <= 22))
 			{
 				colorSetSelect();
-				text(13, 27, "돌아가기");
+				text(13, 27, "메뉴관리");
 				if (mmval.rec.EventType == MOUSE_EVENT)
 				{
 					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
@@ -3404,6 +3622,27 @@ void ownersRestBrowse(User user, Rest rest)
 						clearConsole();
 						colorSetRestore();
 						text(13, 27, "           ");
+						aboutMenu(user, rest);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(13, 27, "메뉴관리");
+			}
+			//돌아가기 버튼
+			if ((23 <= x) && (x <= 36))
+			{
+				colorSetSelect();
+				text(27, 27, "돌아가기");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						clearConsole();
+						colorSetRestore();
+						text(27, 27, "           ");
 						RestListArray restListArray = makeOwnersRestList(user);
 						showMainOwner(user, restListArray);
 					}
@@ -3412,13 +3651,14 @@ void ownersRestBrowse(User user, Rest rest)
 			else
 			{
 				colorSetRestore();
-				text(13, 27, "돌아가기");
+				text(27, 27, "돌아가기");
 			}
 		}
 		else
 		{
 			colorSetRestore();
-			text(13, 27, "돌아가기");
+			text(13, 27, "메뉴관리");
+			text(27, 27, "돌아가기");
 		}
 	}
 }
@@ -3576,7 +3816,7 @@ void reviewReset(User user, RestList restList)
 						if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
 						{
 							if ((repu % 10) == 0)
-							{ 
+							{
 								repu += 1;
 							}
 							else
@@ -3776,7 +4016,7 @@ ReviewArray makeReviewArray(Rest rest)
 	}
 	else
 	{
-		Review emptyReview = { " "," "," ",0};
+		Review emptyReview = { " "," "," ",0 };
 		curRestReview = (Review*)malloc(sizeof(Review));
 		curRestReview[0] = emptyReview;
 	}
@@ -3801,7 +4041,7 @@ void browseOthersReview(User user, RestList restList, ReviewArray reviewArray)
 
 	Review* curRestReview;
 
-	for (int j = 0 ; j < reviewArray.size; j++)
+	for (int j = 0; j < reviewArray.size; j++)
 	{
 		if (strcmp(reviewArray.review[j].ID, user.ID) != 0)
 		{
@@ -3809,7 +4049,7 @@ void browseOthersReview(User user, RestList restList, ReviewArray reviewArray)
 		}
 	}
 
-	curRestReview = (Review*)malloc(sizeof(Review)*curRestReviewSize);
+	curRestReview = (Review*)malloc(sizeof(Review) * curRestReviewSize);
 	curRestReviewSize = 0;
 
 	for (int j = 0; j < reviewArray.size; j++)
@@ -3858,7 +4098,7 @@ void browseOthersReview(User user, RestList restList, ReviewArray reviewArray)
 			}
 			if (curRestReviewSize >= 2)
 			{
-				text(12, 9, curRestReview[i+1].ID);
+				text(12, 9, curRestReview[i + 1].ID);
 				if ((curRestReview[i + 1].repu / 100) == 1)
 				{
 					text(12, 10, "★");
@@ -3874,7 +4114,7 @@ void browseOthersReview(User user, RestList restList, ReviewArray reviewArray)
 			}
 			if (curRestReviewSize >= 3)
 			{
-				text(12, 14, curRestReview[i+2].ID);
+				text(12, 14, curRestReview[i + 2].ID);
 				if ((curRestReview[i + 2].repu / 100) == 1)
 				{
 					text(12, 15, "★");
@@ -3964,7 +4204,7 @@ void browseOthersReview(User user, RestList restList, ReviewArray reviewArray)
 							{
 								colorSetRestore();
 								clearConsole();
-								reviewBrowseWindowUser(user, restList, curRestReview[i+1]);
+								reviewBrowseWindowUser(user, restList, curRestReview[i + 1]);
 							}
 						}
 					}
@@ -3984,7 +4224,7 @@ void browseOthersReview(User user, RestList restList, ReviewArray reviewArray)
 							{
 								colorSetRestore();
 								clearConsole();
-								reviewBrowseWindowUser(user, restList, curRestReview[i+2]);
+								reviewBrowseWindowUser(user, restList, curRestReview[i + 2]);
 							}
 						}
 					}
@@ -4141,7 +4381,7 @@ void reviewSortUser(User user, RestList restList, ReviewArray reviewArray)
 		{
 			for (j = 0; j < reviewArray.size - i - 1; j++)
 			{
-				if (reviewArray.review[j].repu < reviewArray.review[j+1].repu)
+				if (reviewArray.review[j].repu < reviewArray.review[j + 1].repu)
 				{
 					tempReview = reviewArray.review[j];
 					reviewArray.review[j] = reviewArray.review[j + 1];
@@ -5041,6 +5281,758 @@ void deleteRestFile(User user, Rest rest)
 						text(27, 19, "       ");
 						RestListArray restListArray = makeOwnersRestList(user);
 						showMainOwner(user, restListArray);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(27, 19, "확인");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			text(27, 19, "확인");
+		}
+	}
+}
+
+//메뉴관리
+void aboutMenu(User user, Rest rest)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+
+	int menuSize = 0;
+	int tempMenuSize = 0;
+
+	int j = 0;
+
+	Menu* tempMenu;
+	Menu* menu = menuFileRead(&menuSize);
+
+	for (int i = 0; i < menuSize; i++)
+	{
+		if (strcmp(menu[i].code, rest.code) == 0)
+		{
+			tempMenuSize++;
+		}
+	}
+
+	tempMenu = (Menu*)malloc(sizeof(Menu) * tempMenuSize);
+	tempMenuSize = 0;
+
+	for (int i = 0; i < menuSize; i++)
+	{
+		if (strcmp(menu[i].code, rest.code) == 0)
+		{
+			tempMenu[tempMenuSize] = menu[i];
+			tempMenuSize++;
+		}
+	}
+
+	drawBox(10, 23, 11, 1);
+	text(13, 24, "메뉴등록");
+	drawBox(23, 23, 13, 1);
+	text(27, 24, "메뉴삭제");
+	drawBox(38, 23, 10, 1);
+	text(40, 24, "돌아가기");
+
+	while (1)
+	{
+		colorSetRestore();
+
+		text(3, 3, "메뉴");
+
+		if (tempMenuSize == 0)
+		{
+			text(15, 3, "등록된 메뉴가 없습니다");
+		}
+		else
+		{
+			text(15, 3, menu[j].menuName);
+			gotoxy(30, 3);
+			printf("%d", menu[j].price);
+			if (tempMenuSize >= 2)
+			{
+				text(15, 5, menu[j + 1].menuName);
+				gotoxy(30, 5);
+				printf("%d", menu[j + 1].price);
+			}
+			if (tempMenuSize >= 3)
+			{
+				text(15, 7, menu[j + 2].menuName);
+				gotoxy(30, 7);
+				printf("%d", menu[j + 2].price);
+			}
+			if (tempMenuSize >= 4)
+			{
+				text(15, 9, menu[j + 3].menuName);
+				gotoxy(30, 9);
+				printf("%d", menu[j + 3].price);
+			}
+			if (tempMenuSize >= 5)
+			{
+				text(15, 11, menu[j + 4].menuName);
+				gotoxy(30, 11);
+				printf("%d", menu[j + 4].price);
+			}
+			if (tempMenuSize >= 6)
+			{
+				text(15, 13, menu[j + 5].menuName);
+				gotoxy(30, 13);
+				printf("%d", menu[j + 5].price);
+			}
+			if (tempMenuSize >= 7)
+			{
+				text(15, 15, menu[j + 6].menuName);
+				gotoxy(30, 15);
+				printf("%d", menu[j + 6].price);
+			}
+			if (tempMenuSize >= 8)
+			{
+				text(15, 17, menu[j + 7].menuName);
+				gotoxy(30, 17);
+				printf("%d", menu[j + 7].price);
+			}
+			if (tempMenuSize >= 9)
+			{
+				text(15, 19, menu[j + 8].menuName);
+				gotoxy(30, 19);
+				printf("%d", menu[j + 8].price);
+			}
+		}
+
+		text(55, 12, "▲");
+		text(55, 14, "▼");
+
+		// 마우스 이동과 클릭시 처리
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((8 <= y) && (y <= 20))
+		{
+			if ((9 <= x) && (x <= 51))
+			{
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwEventFlags & MOUSE_WHEELED)
+					{
+						// 스크롤 방향 확인
+						short wheelDelta = HIWORD(mmval.rec.Event.MouseEvent.dwButtonState);
+
+						//마우스 위로 스크롤 됨
+						if (wheelDelta > 0)
+						{
+							if ((tempMenuSize > 6) && (0 < j))
+							{
+								text(15, 3, "                                            ");
+								text(15, 5, "                                            ");
+								text(15, 7, "                                            ");
+								text(15, 9, "                                            ");
+								text(15, 11, "                                            ");
+								text(15, 13, "                                            ");
+								text(15, 15, "                                            ");
+								text(15, 17, "                                            ");
+								text(15, 19, "                                            ");
+								j--;
+							}
+						}
+						//마우스 아래로 스크롤 됨
+						else if (wheelDelta < 0)
+						{
+							if ((tempMenuSize > 6) && (tempMenuSize > j + 6))
+							{
+								text(15, 3, "                                            ");
+								text(15, 5, "                                            ");
+								text(15, 7, "                                            ");
+								text(15, 9, "                                            ");
+								text(15, 11, "                                            ");
+								text(15, 13, "                                            ");
+								text(15, 15, "                                            ");
+								text(15, 17, "                                            ");
+								text(15, 19, "                                            ");
+								j++;
+							}
+						}
+					}
+				}
+			}
+		}
+		if ((22 <= y) && (y <= 24))
+		{
+			//메뉴등록 버튼
+			if ((9 <= x) && (x <= 22))
+			{
+				colorSetSelect();
+				text(13, 24, "메뉴등록");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						clearConsole();
+						colorSetRestore();
+						text(12, 24, "           ");
+						newMenu(user, rest);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(13, 24, "메뉴등록");
+			}
+			//메뉴삭제 버튼
+			if ((23 <= x) && (x <= 36))
+			{
+				colorSetSelect();
+				text(27, 24, "메뉴삭제");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						menuRemoveSelect(user,rest);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(27, 24, "메뉴삭제");
+			}
+			//돌아가기 버튼
+			if ((37 <= x) && (x <= 51))
+			{
+				colorSetSelect();
+				text(40, 24, "돌아가기");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						clearConsole();
+						colorSetRestore();
+						text(40, 24, "            ");
+						ownersRestBrowse(user, rest);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(40, 24, "돌아가기");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			text(13, 24, "메뉴등록");
+			text(27, 24, "메뉴삭제");
+			text(40, 24, "돌아가기");
+		}
+	}
+}
+
+//메뉴등록
+void newMenu(User user, Rest rest)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+
+	char menuName[40] = "\0";
+	char code[28] = "\0";
+	strcpy(code, rest.code);
+	int price = 0;
+
+	// 메뉴등록 창
+	drawBox(17, 9, 30, 1);
+
+	drawBox(17, 14, 30, 1);
+
+	drawBox(10, 23, 11, 1);
+	text(12, 24, "메뉴등록");
+	drawBox(37, 23, 11, 1);
+	text(39, 24, "돌아가기");
+
+	while (1)
+	{
+		colorSetRestore();
+		text(7, 10, "메뉴이름");
+		text(7, 15, "가격");
+
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((19 <= x) && (x <= 52))
+		{
+			//메뉴이름 입력
+			if ((9 <= y) && (y <= 11))
+			{
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						textInput(19, 10, menuName, FALSE);
+					}
+				}
+			}
+			//가격 입력
+			if ((14 <= y) && (y <= 16))
+			{
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						char tempPrice[20];
+						itoa(price, tempPrice, 10);
+						textInput(19, 15, tempPrice, FALSE);
+						price = atoi(tempPrice);
+					}
+				}
+			}
+		}
+		if ((22 <= y) && (y <= 24))
+		{
+			//등록 버튼
+			if ((9 <= x) && (x <= 24))
+			{
+				colorSetSelect();
+				text(12, 24, "메뉴등록");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						newMenuCheck(user, rest, menuName, price);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(12, 24, "메뉴등록");
+			}
+			//돌아가기 버튼
+			if ((36 <= x) && (x <= 49))
+			{
+				colorSetSelect();
+				text(39, 24, "돌아가기");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						clearConsole();
+						text(39, 24, "          ");
+						aboutMenu(user, rest);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(39, 24, "돌아가기");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			text(12, 24, "메뉴등록");
+			colorSetRestore();
+			text(39, 24, "돌아가기");
+		}
+	}
+}
+
+//메뉴등록버튼
+void newMenuCheck(User user, Rest rest, char* menuName, int price)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+	int x, y;
+
+	Menu menu;
+
+	//가입화면에서 넘어왔을 경우
+	if ((strcmp(menuName, "\0") != 0) && (strlen(menuName) <= 40))
+	{
+		strcpy(menu.menuName, menuName);
+		strcpy(menu.code, rest.code);
+		menu.price = price;
+		menuFileWrite(menu);
+		drawBox(10, 10, 30, 10);
+		text(14, 12, "메뉴 등록이 완료되었습니다.");
+		drawBox(19, 18, 10, 1);
+		text(24, 19, "확인");
+		while (1)
+		{
+			ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+			mouseMove(&x, &y);
+			if ((19 <= x) && (x <= 29))
+			{
+				if ((17 <= y) && (y <= 19))
+				{
+					colorSetSelect();
+					text(24, 19, "확인");
+					if (mmval.rec.EventType == MOUSE_EVENT)
+					{
+						if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+						{
+							clearConsole();
+							colorSetRestore();
+							text(24, 19, "       ");
+							aboutMenu(user, rest);
+
+						}
+					}
+				}
+				else
+				{
+					colorSetRestore();
+					text(24, 19, "확인");
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(24, 19, "확인");
+			}
+		}
+
+	}
+	else
+	{
+		text(20, 27, "                                      ");
+		text(20, 27, "유효하지 않은 메뉴이름입니다.");
+	}
+}
+
+//삭제메뉴선택
+void menuRemoveSelect(User user, Rest rest)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+
+	int i = 0;
+
+	int menuSize = 0;
+	int tempMenuSize = 0;
+
+	int j = 0;
+
+	Menu* tempMenu;
+	Menu* menu = menuFileRead(&menuSize);
+
+	for (int i = 0; i < menuSize; i++)
+	{
+		if (strcmp(menu[i].code, rest.code) == 0)
+		{
+			tempMenuSize++;
+		}
+	}
+
+	tempMenu = (Menu*)malloc(sizeof(Menu) * tempMenuSize);
+	tempMenuSize = 0;
+
+	for (int i = 0; i < menuSize; i++)
+	{
+		if (strcmp(menu[i].code, rest.code) == 0)
+		{
+			tempMenu[tempMenuSize] = menu[i];
+			tempMenuSize++;
+		}
+	}
+
+	i = 0;
+
+
+	if (tempMenuSize != 0)
+	{
+		colorSetRestore();
+		drawBox(6, 1, 48, 20);
+		drawBox(10, 2, 40, 3);
+		drawBox(10, 7, 40, 3);
+		drawBox(10, 12, 40, 3);
+
+		text(12, 19, "삭제할 메뉴를 골라주세요");
+
+		while (1)
+		{
+			//유저에게 보여줄 화면
+			if (tempMenuSize == 0)
+			{
+				colorSetRestore();
+				text(12, 4, "(이것은 오류입니다.)");
+			}
+			else
+			{
+				colorSetRestore();
+				text(12, 4, tempMenu[i].menuName);
+				gotoxy(12, 5);
+				printf("%d", tempMenu[i].price);
+				if (tempMenuSize >= 2)
+				{
+					text(12, 9, tempMenu[i + 1].menuName);
+					gotoxy(12, 10);
+					printf("%d", tempMenu[i + 1].price);
+				}
+				if (tempMenuSize >= 3)
+				{
+					text(12, 14, tempMenu[i + 2].menuName);
+					gotoxy(12, 15);
+					printf("%d", tempMenu[i + 2].price);
+				}
+			}
+			// 마우스 이동과 클릭시 처리
+			ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+			mouseMove(&x, &y);
+			if ((2 <= y) && (y <= 16))
+			{
+				if ((9 <= x) && (x <= 51))
+				{
+					if (mmval.rec.EventType == MOUSE_EVENT)
+					{
+						if (mmval.rec.Event.MouseEvent.dwEventFlags & MOUSE_WHEELED)
+						{
+							// 스크롤 방향 확인
+							short wheelDelta = HIWORD(mmval.rec.Event.MouseEvent.dwButtonState);
+
+							//마우스 위로 스크롤 됨
+							if (wheelDelta > 0)
+							{
+								if ((tempMenuSize > 3) && (0 < i))
+								{
+									i--;
+								}
+							}
+							//마우스 아래로 스크롤 됨
+							else if (wheelDelta < 0)
+							{
+								if ((tempMenuSize > 3) && (tempMenuSize > i + 3))
+								{
+									i++;
+								}
+							}
+						}
+					}
+				}
+				if ((1 <= y) && (y <= 5))
+				{
+					if (tempMenuSize != 0)
+					{
+						text(9, 4, ">");
+						if (mmval.rec.EventType == MOUSE_EVENT)
+						{
+							if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+							{
+								colorSetRestore();
+								menuRemove(user, rest, tempMenu[i]);
+							}
+						}
+					}
+				}
+				else
+				{
+					text(9, 4, " ");
+				}
+				if ((6 <= y) && (y <= 10))
+				{
+					if (tempMenuSize >= 2)
+					{
+						text(9, 9, ">");
+						if (mmval.rec.EventType == MOUSE_EVENT)
+						{
+							if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+							{
+								colorSetRestore();
+								menuRemove(user, rest, tempMenu[i + 1]);
+							}
+						}
+					}
+				}
+				else
+				{
+					text(9, 9, " ");
+				}
+				if ((11 <= y) && (y <= 15))
+				{
+					if (tempMenuSize >= 3)
+					{
+						text(9, 14, ">");
+						if (mmval.rec.EventType == MOUSE_EVENT)
+						{
+							if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+							{
+								colorSetRestore();
+								menuRemove(user, rest, tempMenu[i + 2]);
+							}
+						}
+					}
+				}
+				else
+				{
+					text(9, 14, " ");
+				}
+			}
+			else
+			{
+				text(9, 4, " ");
+				text(9, 9, " ");
+				text(9, 14, " ");
+			}
+		}
+	}
+	else
+	{
+		text(20, 27, "                                      ");
+		text(20, 27, "등록된 메뉴가 없습니다.");
+	}
+	free(tempMenu);
+	free(menu);
+}
+
+//메뉴삭제
+void menuRemove(User user, Rest rest, Menu menu)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+
+	drawBox(9, 10, 38, 10);
+	text(15, 12, "현재 메뉴를 삭제 하시겠습니까?");
+	drawBox(18, 18, 8, 1);
+	text(21, 19, "확인");
+	drawBox(31, 18, 8, 1);
+	text(34, 19, "취소");
+	while (1)
+	{
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((17 <= y) && (y <= 19))
+		{
+			if ((17 <= x) && (x <= 27))
+			{
+				colorSetSelect();
+				text(21, 19, "확인");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						colorSetRestore();
+						menuRemoveButton(user, rest, menu);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(21, 19, "확인");
+			}
+			if ((30 <= x) && (x <= 40))
+			{
+				colorSetSelect();
+				text(34, 19, "취소");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						clearConsole();
+						colorSetRestore();
+						text(34, 19, "        ");
+						aboutMenu(user, rest);
+					}
+				}
+			}
+			else
+			{
+				colorSetRestore();
+				text(34, 19, "취소");
+			}
+		}
+		else
+		{
+			colorSetRestore();
+			text(21, 19, "확인");
+			text(34, 19, "취소");
+		}
+	}
+}
+
+//메뉴삭제버튼
+void menuRemoveButton(User user, Rest rest, Menu menu)
+{
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+
+	int x, y;
+	int size = 0;
+	int resetMenu = 0;
+
+	Menu* menuList = menuFileRead(&size);
+
+	Menu resMenu;
+	strcpy(resMenu.menuName, menu.menuName);
+	strcpy(resMenu.code, menu.code);
+	resMenu.price = menu.price;
+
+	for (int i = 0; i < size; i++)
+	{
+		if (strcmp(menuList[i].code, resMenu.code) == 0)
+		{
+			if (strcmp(menuList[i].menuName, resMenu.menuName) == 0)
+			{
+				resetMenu = i;
+			}
+		}
+	}
+
+	menuFileDeleteLine(resetMenu);
+	drawBox(9, 10, 38, 10);
+	text(18, 12, "가게가 삭제되었습니다.");
+	drawBox(22, 18, 10, 1);
+	text(27, 19, "확인");
+	while (1)
+	{
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((22 <= x) && (x <= 32))
+		{
+			if ((17 <= y) && (y <= 19))
+			{
+				colorSetSelect();
+				text(27, 19, "확인");
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						clearConsole();
+						colorSetRestore();
+						text(27, 19, "       ");
+						aboutMenu(user, rest);
 					}
 				}
 			}

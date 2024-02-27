@@ -298,9 +298,8 @@ void menuFileWrite(Menu menu)
 	}
 	else
 	{
-		fwrite(menu.code, sizeof(char), sizeof(menu.code), fp);
-		fwrite(menu.menuName, sizeof(char), sizeof(menu.menuName), fp);
-		fprintf(fp,"%d\n", menu.price);
+		fwrite(&menu, sizeof(Menu), 1, fp);
+		fprintf(fp,"\n");
 	}
 	fclose(fp);
 }
@@ -323,9 +322,8 @@ Menu* menuFileRead(int* _size)
 	{
 		while (!feof(fp))
 		{
-			fread(temp.code, sizeof(char), sizeof(temp.code), fp);
-			fread(temp.menuName, sizeof(char), sizeof(temp.menuName), fp);
-			fscanf(fp,"%d\n", temp.price);
+			fread(&temp, sizeof(Menu), 1, fp);
+			fscanf(fp,"\n");
 			size++;
 		}
 		temps = (Menu*)malloc(sizeof(Menu) * size);
@@ -333,15 +331,57 @@ Menu* menuFileRead(int* _size)
 		fp = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\menu.txt", "r");
 		while (!feof(fp))
 		{
-			fread(temp.code, sizeof(char), sizeof(temp.code), fp);
-			fread(temp.menuName, sizeof(char), sizeof(temp.menuName), fp);
-			fscanf(fp,"%d\n", temp.price);
+			fread(&temps[size], sizeof(Menu), 1, fp);
+			fscanf(fp, "\n");
 			size++;
 		}
 	}
 	fclose(fp);
 	*_size = size;
 	return temps;
+}
+
+//메뉴정보 삭제
+void menuFileDeleteLine(int seek) {
+	FILE* inputFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\menu.txt", "r");
+	FILE* tempFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\temp.txt", "w");
+
+	if (inputFile == NULL || tempFile == NULL) {
+		fprintf(stderr, "출력을 위한 파일을 열 수 없습니다.\n");
+		exit(1);
+	}
+
+	Menu temp;
+	int currentLine = 0;
+
+	while (!feof(inputFile))
+	{
+		fread(&temp, sizeof(Menu), 1, inputFile);
+		fscanf(inputFile, "\n");
+		if (currentLine != seek)
+		{
+			fwrite(&temp, sizeof(Menu), 1, tempFile);
+			fprintf(tempFile, "\n");
+		}
+		currentLine++;
+	}
+
+	fclose(inputFile);
+	fclose(tempFile);
+
+	inputFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\menu.txt", "w");
+	tempFile = fopen("C:\\Users\\phg2559\\Documents\\cProject\\cProject\\file\\temp.txt", "r");
+
+	while (!feof(tempFile))
+	{
+		fread(&temp, sizeof(Menu), 1, tempFile);
+		fscanf(tempFile, "\n");
+		fwrite(&temp, sizeof(Menu), 1, inputFile);
+		fprintf(inputFile, "\n");
+	}
+
+	fclose(inputFile);
+	fclose(tempFile);
 }
 
 //리뷰정보 파일 수정

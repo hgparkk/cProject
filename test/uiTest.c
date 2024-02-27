@@ -103,6 +103,13 @@ void clearConsole()
 	FillConsoleOutputCharacter(GetStdHandle(STD_OUTPUT_HANDLE), ' ', 80 * 25, Coor, &dw);
 }
 
+// 색 원상복구
+void colorSetRestore()
+{
+	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleTextAttribute(handle, 7);
+}
+
 Review* reviewFileRead(int* _size)
 {
 	Review temp;
@@ -138,46 +145,28 @@ Review* reviewFileRead(int* _size)
 }
 
 //해당 좌표에 문자열 입력
-void textInput2(int x, int y, char* text)
+void textInput(int x, int y, char* text, bool pw)
 {
-	char* temp = (char*)calloc(300, sizeof(char));
+	char temp[60] = "\0";
 	int num = 0;
-	int resY = y;
-	int koreanCheck = 0;
 	gotoxy(x, y);
 	strcat(temp, text);
 	while (temp[num] != '\0')
 	{
-		if ((num != 0) && ((num % 28) == 0))
+		if (pw == TRUE)
 		{
-			resY++;
-			gotoxy(x, resY);
+			printf("*");
 		}
-		putchar(temp[num]);
+		else
+		{
+			putchar(temp[num]);
+		}
 		num++;
 	}
 	while (TRUE)
 	{
 		if (_kbhit())
 		{
-			if ((num != 0) && ((num % 28) == 0))
-			{
-				if (temp[num] >> 7)
-				{
-					koreanCheck++;
-					if (koreanCheck == 2)
-					{
-						resY++;
-						gotoxy(x, resY);
-						koreanCheck = 0;
-					}
-				}
-				else
-				{
-					resY++;
-					gotoxy(x, resY);
-				}
-			}
 			temp[num] = _getch();
 			if (temp[num] == 13)
 			{
@@ -186,29 +175,8 @@ void textInput2(int x, int y, char* text)
 			}
 			else if (temp[num] == '\b' && num != 0)
 			{
-				if ((num != 0) && (num & 30) == 0)
-				{
-					if (temp[num - 1] >> 7)
-					{
-						koreanCheck++;
-						if (koreanCheck == 2)
-						{
-							resY--;
-							gotoxy(x + 30, resY);
-							koreanCheck = 0;
-						}
-					}
-					else
-					{
-						resY--;
-						gotoxy(x + 30, resY);
-					}
-				}
-				else
-				{
-					printf("\b \b");
-					temp[num] = '\0';
-				}
+				printf("\b \b");
+				temp[num] = '\0';
 				num--;
 			}
 			else
@@ -217,7 +185,10 @@ void textInput2(int x, int y, char* text)
 					continue;
 				else
 				{
-					putchar(temp[num]);
+					if (pw == TRUE)
+						printf("*");
+					else
+						putchar(temp[num]);
 				}
 				num++;
 			}
@@ -228,11 +199,65 @@ void textInput2(int x, int y, char* text)
 
 int main()
 {
-	setConsole();
+	// 마우스 클릭 관련 변수
+	Mouse mmval;
+	mmval.hIn = GetStdHandle(STD_INPUT_HANDLE);
+	mmval.hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleMode(mmval.hIn, ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
 
-	drawBox(9, 10, 38, 10);
-	text(14, 12, "가게주인은 최소 하나의 가게가");
-	text(14, 13, "등록되어 있어야 합니다.");
-	drawBox(22, 18, 10, 1);
-	text(27, 19, "확인");
+	int x, y;
+
+	char menuName[40] = "\0";
+	char code[28] = "\0";
+	int price = 0;
+
+	// 메뉴등록 창
+	drawBox(17, 9, 30, 1);
+
+	drawBox(17, 14, 30, 1);
+
+	drawBox(10, 23, 11, 1);
+	text(12, 24, "메뉴등록");
+	drawBox(37, 23, 11, 1);
+	text(39, 24, "돌아가기");
+
+	while (1)
+	{
+		colorSetRestore();
+		gotoxy(7, 4);
+		printf("%d", price);
+		text(7, 10, "메뉴이름");
+		text(7, 15, "가격");
+
+		ReadConsoleInput(mmval.hIn, &mmval.rec, 1, &mmval.dwNOER);
+		mouseMove(&x, &y);
+		if ((19 <= x) && (x <= 52))
+		{
+			//메뉴이름 입력
+			if ((9 <= y) && (y <= 11))
+			{
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						textInput(19, 4, menuName, FALSE);
+					}
+				}
+			}
+			//가격 입력
+			if ((14 <= y) && (y <= 16))
+			{
+				if (mmval.rec.EventType == MOUSE_EVENT)
+				{
+					if (mmval.rec.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+					{
+						char tempPrice[20];
+						itoa(price,tempPrice,10);
+						textInput(19, 15, tempPrice, FALSE);
+						price = atoi(tempPrice);
+					}
+				}
+			}
+		}
+	}
 }

@@ -1,2 +1,0 @@
-phg2559 testowner-1-tpcgbrvoevkdw 100 임시가게1에 대한 리뷰입니다
-phg2559 testowner-2-azksqddauhljp 110 임시가게2에 대한 리뷰입니다.
